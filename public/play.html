@@ -30,14 +30,19 @@
     h2 {
       margin-top: 0;
       color: #bb86fc;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
+    }
+    .progress {
+      font-size: 0.9rem;
+      color: #03dac6;
+      margin-bottom: 15px;
     }
     .btn-option {
       background-color: #3700b3;
       color: white;
       border: none;
       padding: 14px 20px;
-      margin: 10px 0;
+      margin: 8px 0;
       width: 100%;
       border-radius: 8px;
       font-size: 1rem;
@@ -79,7 +84,8 @@
 <body>
 
   <div class="card" id="quiz-card">
-    <h2 id="question-title">รอเริ่มเกม...</h2>
+    <div class="progress" id="progress-text">ข้อ 1 / 20</div>
+    <h2 id="question-title">กำลังโหลดคำถาม...</h2>
     <div id="options-container"></div>
     <div id="result-box" class="hidden"></div>
   </div>
@@ -93,61 +99,85 @@
   <script>
     const socket = io();
 
+    let allQuestions = [];
+    let currentIndex = 0;
+
+    const quizCard = document.getElementById('quiz-card');
+    const finalCard = document.getElementById('final-card');
+    const progressText = document.getElementById('progress-text');
     const questionTitle = document.getElementById('question-title');
     const optionsContainer = document.getElementById('options-container');
     const resultBox = document.getElementById('result-box');
-    const quizCard = document.getElementById('quiz-card');
-    const finalCard = document.getElementById('final-card');
     const rankingContainer = document.getElementById('ranking-container');
 
-    // 1. รับคำถามข้อถัดไป
-    socket.on('newQuestion', (question) => {
-      // รีเซ็ตหน้าจอคำตอบ
+    // 1. รับคำถามทั้งหมดจาก Server
+    socket.on('initQuestions', (questions) => {
+      allQuestions = questions;
+      currentIndex = 0;
+      renderQuestion(currentIndex);
+    });
+
+    // 2. แสดงคำถามตามลำดับ Index
+    function renderQuestion(index) {
       resultBox.classList.add('hidden');
       resultBox.innerText = '';
       optionsContainer.innerHTML = '';
-      
-      questionTitle.innerText = question.title;
 
-      // สร้างปุ่มตัวเลือก
-      question.options.forEach((opt, index) => {
+      const q = allQuestions[index];
+      progressText.innerText = `ข้อ ${index + 1} / ${allQuestions.length}`;
+      questionTitle.innerText = q.title;
+
+      q.options.forEach((opt) => {
         const btn = document.createElement('button');
         btn.className = 'btn-option';
         btn.innerText = opt.text;
-        btn.onclick = () => selectOption(index);
+        btn.onclick = () => selectOption(opt);
         optionsContainer.appendChild(btn);
       });
-    });
+    }
 
-    // 2. ส่งคำตอบเมื่อผู้เล่นกดเลือก
-    function selectOption(index) {
-      // ปิดใช้งานปุ่มทั้งหมดชั่วคราวหลังกด
+    // 3. เมื่อผู้เล่นกดเลือกตัวเลือก
+    function selectOption(option) {
+      // ปิดใช้งานปุ่มทั้งหมดชั่วคราว
       const buttons = document.querySelectorAll('.btn-option');
       buttons.forEach(btn => btn.disabled = true);
 
-      // ส่งตัวเลือกไปหา Server
-      socket.emit('submitAnswer', { optionIndex: index });
+      // ส่งคำตอบให้ Server นับสถิติ
+      socket.emit('submitAnswer', { optionText: option.text });
+
+      // แสดงความเหมาะสม (fitFor)
+      resultBox.innerText = '💡 ' + option.fitFor;
+      resultBox.classList.remove('hidden');
+
+      // รอ 2 วินาทีแล้วเปลี่ยนไปข้อถัดไปอัตโนมัติ
+      setTimeout(() => {
+        currentIndex++;
+        if (currentIndex < allQuestions.length) {
+          renderQuestion(currentIndex);
+        } else {
+          // เล่นครบ 20 ข้อแล้ว ให้ขอผลสรุป
+          socket.emit('getFinalRanking');
+        }
+      }, 2000);
     }
 
-    // 3. รับผลคำแนะนำ (ความเหมาะสม) มาแสดงทันทีหลังตอบ
-    socket.on('answerResult', (data) => {
-      resultBox.innerText = '💡 ' + data.fitFor;
-      resultBox.classList.remove('hidden');
-    });
-
-    // 4. รับผลสรุปจัดอันดับเมื่อครบ 20 ข้อ
+    // 4. แสดงผลสรุปเมื่อเล่นจบ 20 ข้อ
     socket.on('showFinalRanking', (stats) => {
       quizCard.classList.add('hidden');
       finalCard.classList.remove('hidden');
       rankingContainer.innerHTML = '';
 
-      // เรียงลำดับตัวเลือกที่มีคนกดมากที่สุดไปน้อยที่สุด
       const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+
+      if (sortedStats.length === 0) {
+        rankingContainer.innerHTML = '<p>ยังไม่มีข้อมูลสถิติ</p>';
+        return;
+      }
 
       sortedStats.forEach(([optionText, count], rank) => {
         const item = document.createElement('div');
         item.className = 'ranking-item';
-        item.innerHTML = `<span><strong>อันดับ ${rank + 1}:</strong> ${optionText}</span><span><strong>${count}</strong> คน</span>`;
+        item.innerHTML = `<span><strong>อันดับ ${rank + 1}:</strong> ${optionText}</span><span><strong>${count}</strong> ครั้ง</span>`;
         rankingContainer.appendChild(item);
       });
     });

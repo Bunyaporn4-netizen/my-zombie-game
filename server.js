@@ -1,3 +1,14 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static('public'));
+
+// ชุดคำถาม 20 ข้อ
 const questions = [
   {
     id: 1,
@@ -180,3 +191,25 @@ const questions = [
     ]
   }
 ];
+
+// ตัวแปรเก็บสถิติคำตอบรวมของผู้เล่นทุกคน
+const globalStats = {};
+
+io.on('connection', (socket) => {
+  // 1. ส่งคำถามทั้งหมดให้ผู้เล่นทันทีที่เชื่อมต่อ
+  socket.emit('initQuestions', questions);
+
+  // 2. รับการโหวตเลือกตอบจากผู้เล่นเพื่อบันทึกสถิติรวม
+  socket.on('submitAnswer', (data) => {
+    const { optionText } = data;
+    globalStats[optionText] = (globalStats[optionText] || 0) + 1;
+  });
+
+  // 3. เมื่อเล่นจบ ส่งสรุปอันดับยอดนิยมกลับไป
+  socket.on('getFinalRanking', () => {
+    socket.emit('showFinalRanking', globalStats);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
