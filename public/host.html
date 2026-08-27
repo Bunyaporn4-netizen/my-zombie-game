@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบสำรวจสายการเรียน (Host)</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #121212; color: #fff; margin: 0; padding: 20px; }
+        .container { display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; }
+        .qr-box { background: #fff; color: #000; padding: 20px; border-radius: 15px; margin: 10px; }
+        .chart-box { width: 55%; background: #1e1e1e; padding: 20px; border-radius: 15px; }
+    </style>
+</head>
+<body>
+    <h1>สำรวจสายการเรียนที่อยากเรียนต่อ</h1>
+    <div class="container">
+        <div class="qr-box">
+            <h3>สแกนเพื่อเข้าเล่นเกม</h3>
+            <canvas id="qrcode"></canvas>
+            <p id="url-text"></p>
+        </div>
+        <div class="chart-box">
+            <canvas id="voteChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let chart;
+
+        const ctx = document.getElementById('voteChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'จำนวนนักเรียน (คน)',
+                    data: [],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        socket.on('initData', (data) => {
+            QRCode.toCanvas(document.getElementById('qrcode'), data.studentUrl, { width: 200 });
+            document.getElementById('url-text').innerText = data.studentUrl;
+            updateChart(data.votes);
+        });
+
+        socket.on('updateVotes', (votes) => {
+            updateChart(votes);
+        });
+
+        function updateChart(votes) {
+            const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+            chart.data.labels = sorted.map(item => item[0]);
+            chart.data.datasets[0].data = sorted.map(item => item[1]);
+            chart.update();
+        }
+    </script>
+</body>
+</html>

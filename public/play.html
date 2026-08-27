@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zombie Quiz Game - Play</title>
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #1e1e1e;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    h2 {
+      margin-top: 0;
+      color: #bb86fc;
+      font-size: 1.4rem;
+    }
+    .btn-option {
+      background-color: #3700b3;
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .btn-option:hover {
+      background-color: #6200ee;
+    }
+    .btn-option:active {
+      transform: scale(0.98);
+    }
+    .btn-option:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    #result-box {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #2c2c2c;
+      border-left: 4px solid #03dac6;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid #333;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="quiz-card">
+    <h2 id="question-title">รอเริ่มเกม...</h2>
+    <div id="options-container"></div>
+    <div id="result-box" class="hidden"></div>
+  </div>
+
+  <div class="card hidden" id="final-card">
+    <h2>สรุปผลอันดับคำตอบยอดนิยม</h2>
+    <div id="ranking-container"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const questionTitle = document.getElementById('question-title');
+    const optionsContainer = document.getElementById('options-container');
+    const resultBox = document.getElementById('result-box');
+    const quizCard = document.getElementById('quiz-card');
+    const finalCard = document.getElementById('final-card');
+    const rankingContainer = document.getElementById('ranking-container');
+
+    // 1. รับคำถามข้อถัดไป
+    socket.on('newQuestion', (question) => {
+      // รีเซ็ตหน้าจอคำตอบ
+      resultBox.classList.add('hidden');
+      resultBox.innerText = '';
+      optionsContainer.innerHTML = '';
+      
+      questionTitle.innerText = question.title;
+
+      // สร้างปุ่มตัวเลือก
+      question.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-option';
+        btn.innerText = opt.text;
+        btn.onclick = () => selectOption(index);
+        optionsContainer.appendChild(btn);
+      });
+    });
+
+    // 2. ส่งคำตอบเมื่อผู้เล่นกดเลือก
+    function selectOption(index) {
+      // ปิดใช้งานปุ่มทั้งหมดชั่วคราวหลังกด
+      const buttons = document.querySelectorAll('.btn-option');
+      buttons.forEach(btn => btn.disabled = true);
+
+      // ส่งตัวเลือกไปหา Server
+      socket.emit('submitAnswer', { optionIndex: index });
+    }
+
+    // 3. รับผลคำแนะนำ (ความเหมาะสม) มาแสดงทันทีหลังตอบ
+    socket.on('answerResult', (data) => {
+      resultBox.innerText = '💡 ' + data.fitFor;
+      resultBox.classList.remove('hidden');
+    });
+
+    // 4. รับผลสรุปจัดอันดับเมื่อครบ 20 ข้อ
+    socket.on('showFinalRanking', (stats) => {
+      quizCard.classList.add('hidden');
+      finalCard.classList.remove('hidden');
+      rankingContainer.innerHTML = '';
+
+      // เรียงลำดับตัวเลือกที่มีคนกดมากที่สุดไปน้อยที่สุด
+      const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+
+      sortedStats.forEach(([optionText, count], rank) => {
+        const item = document.createElement('div');
+        item.className = 'ranking-item';
+        item.innerHTML = `<span><strong>อันดับ ${rank + 1}:</strong> ${optionText}</span><span><strong>${count}</strong> คน</span>`;
+        rankingContainer.appendChild(item);
+      });
+    });
+  </script>
+</body>
+</html>
