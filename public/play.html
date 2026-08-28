@@ -215,10 +215,9 @@
     bgm.loop = true;
     bgm.volume = 0.4;
 
-    // แยกไฟล์เสียง 3 เสียงแยกกันตามประโยค (หากใช้ไฟล์เดียว สามารถตั้งชื่อ ready1, ready2, ready3 ชี้ไปที่ไฟล์เดิมได้)
     const voiceReady = new Audio('/audio/ready.mp3'); 
-    const voiceTime = new Audio('/audio/time_has_come.mp3'); // หากไม่มี ให้เปลี่ยน path เป็น ready.mp3
-    const voiceBegin = new Audio('/audio/let_show_begin.mp3'); // หากไม่มี ให้เปลี่ยน path เป็น ready.mp3
+    const voiceTime = new Audio('/audio/time_has_come.mp3'); 
+    const voiceBegin = new Audio('/audio/let_show_begin.mp3'); 
 
     const shootSound = new Audio('/audio/shoot.mp3');
     shootSound.volume = 0.5;
@@ -314,29 +313,36 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    function initAndStartCinematic() {
+    // --- ฟังก์ชันปลดล็อกสิทธิ์เล่นเสียงบนมือถือและคอมพิวเตอร์อย่างสมบูรณ์ ---
+    async function initAndStartCinematic() {
       document.getElementById('btnStartGame').style.display = 'none';
       document.getElementById('startCountdownText').style.display = 'block';
 
-      // ปลดล็อกสิทธิ์เสียง
       const allAudio = [voiceReady, voiceTime, voiceBegin, shootSound, quizSound, beepSound, startSound, bgm];
-      allAudio.forEach(audio => {
-        audio.play().then(() => {
+      
+      // ปลดล็อกเสียงทุกไฟล์ขณะกดปุ่ม Tap to start
+      for (let audio of allAudio) {
+        try {
+          audio.muted = true;
+          await audio.play();
           audio.pause();
           audio.currentTime = 0;
-        }).catch(() => {});
-      });
+          audio.muted = false;
+        } catch (e) {
+          audio.muted = false;
+        }
+      }
 
       startCinematicIntro();
     }
 
-    // --- ซิงค์รูปและเสียงแบบ 1 ต่อ 1 ---
+    // --- ฟังก์ชัน Intro ที่ซิงค์ภาพตรงกับเสียง พร้อมระบบป้องกันภาพค้าง ---
     function startCinematicIntro() {
       const el = document.getElementById('startCountdownText');
       const sequence = [
-        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audio: voiceReady },
-        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audio: voiceTime },
-        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audio: voiceBegin }
+        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audio: voiceReady, duration: 1600 },
+        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audio: voiceTime, duration: 1600 },
+        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audio: voiceBegin, duration: 1600 }
       ];
 
       let index = 0;
@@ -348,25 +354,29 @@
           el.style.color = item.color;
           el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
 
-          // แสดงข้อความตรงกับเสียงเริ่มเล่น
           el.classList.add('show');
-          
-          item.audio.currentTime = 0;
-          
-          // เมื่อเสียงพูดประโยคจบ -> ปิดข้อความ -> เล่นประโยคถัดไป
-          item.audio.onended = () => {
+
+          let hasEnded = false;
+
+          const nextStep = () => {
+            if (hasEnded) return;
+            hasEnded = true;
             el.classList.remove('show');
             index++;
             setTimeout(playNextStep, 200);
           };
 
+          // ป้องกันค้างโดยใช้เวลา Fallback ตามความยาวปกติของเสียง
+          const fallbackTimer = setTimeout(nextStep, item.duration);
+
+          item.audio.onended = () => {
+            clearTimeout(fallbackTimer);
+            nextStep();
+          };
+
+          item.audio.currentTime = 0;
           item.audio.play().catch(err => {
-            // สำรองกรณีเล่นไฟล์เสียงไม่ได้
-            setTimeout(() => {
-              el.classList.remove('show');
-              index++;
-              setTimeout(playNextStep, 200);
-            }, 1200);
+            console.log("Audio play error, using fallback timer", err);
           });
 
         } else {
