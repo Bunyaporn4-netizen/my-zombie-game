@@ -96,10 +96,9 @@
       text-align: center;
       letter-spacing: 2px;
       text-transform: uppercase;
-      text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(0, 255, 136, 0.6);
       opacity: 0;
       transform: scale(0.8);
-      transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+      transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
     }
 
     #startCountdownText.show {
@@ -210,43 +209,55 @@
     const W = 800;
     const H = 600;
 
-    // --- ระบบ Web Audio API สำหรับ Sync เสียงและภาพ 100% ---
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContextClass();
-    const audioBuffers = {};
+    // --- Audio System ---
+    let audioCtx = null;
 
-    // โหลดไฟล์เสียงลงหน่วยความจำ RAM ล่วงหน้า
-    async function loadAudioBuffer(key, url) {
-      try {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        audioBuffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
-      } catch (e) {
-        console.warn(`Failed to load audio: ${url}`, e);
-      }
-    }
+    const audioElements = {
+      ready: new Audio('audio/ready.mp3'),
+      time: new Audio('audio/time_has_come.mp3'),
+      begin: new Audio('audio/let_show_begin.mp3'),
+      start: new Audio('audio/start.mp3'),
+      shoot: new Audio('audio/shoot.mp3'),
+      quiz: new Audio('audio/quiz.mp3')
+    };
 
-    // โหลดไฟล์เสียงทั้งหมดเตรียมไว้
-    loadAudioBuffer('ready', '/audio/ready.mp3');
-    loadAudioBuffer('time', '/audio/time_has_come.mp3');
-    loadAudioBuffer('begin', '/audio/let_show_begin.mp3');
-    loadAudioBuffer('start', '/audio/start.mp3');
-    loadAudioBuffer('shoot', '/audio/shoot.mp3');
-    loadAudioBuffer('quiz', '/audio/quiz.mp3');
+    // โหลดไฟล์เสียงไว้รอก่อน
+    Object.values(audioElements).forEach(audio => {
+      audio.preload = 'auto';
+    });
 
-    // BGM ยังใช้ Audio Element ปกติ
-    const bgm = new Audio('/audio/bgm.mp3');
+    const bgm = new Audio('audio/bgm.mp3');
     bgm.loop = true;
     bgm.volume = 0.4;
 
-    // ฟังก์ชันเล่นเสียงจาก Buffer ที่โหลดไว้ล่วงหน้า (0ms Latency)
-    function playBufferSound(key) {
-      if (!audioBuffers[key]) return 0;
-      const source = audioCtx.createBufferSource();
-      source.buffer = audioBuffers[key];
-      source.connect(audioCtx.destination);
-      source.start(0);
-      return audioBuffers[key].duration; // ส่งคืนความยาวของไฟล์เสียง (วินาที)
+    // ฟังก์ชันเล่นเสียง และทำงานเมื่อเสียงจบจริง (onended)
+    function playSoundAndSync(key, onAudioEnd) {
+      const audio = audioElements[key];
+      if (!audio) {
+        if (onAudioEnd) onAudioEnd();
+        return;
+      }
+
+      try {
+        audio.currentTime = 0;
+        
+        // เมื่อไฟล์เสียงเล่นจบลง ให้รัน callback ทำงานถัดไปทันที
+        audio.onended = () => {
+          if (onAudioEnd) onAudioEnd();
+        };
+
+        const promise = audio.play();
+        if (promise !== undefined) {
+          promise.catch(err => {
+            console.warn("Audio play blocked or not found:", err);
+            // กรณีไม่มีไฟล์หรือเล่นไม่ได้ ให้ข้ามประโยคใน 1.5 วินาที
+            setTimeout(() => { if (onAudioEnd) onAudioEnd(); }, 1500);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio error:", e);
+        if (onAudioEnd) onAudioEnd();
+      }
     }
 
     let gameStarted = false;
@@ -278,7 +289,7 @@
 
     const zombieImages = [new Image(), new Image(), new Image(), new Image()];
     zombieImages.forEach((img, i) => {
-      img.src = `/images/zombie${i+1}.png`;
+      img.src = `images/zombie${i+1}.png`;
     });
 
     let targetCrosshair = null;
@@ -331,10 +342,13 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- เริ่มระบบและเปิดใช้งาน AudioContext ---
-    async function initAndStartCinematic() {
+    // --- เริ่มต้นเกม ---
+    function initAndStartCinematic() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
       if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
+        audioCtx.resume();
       }
 
       document.getElementById('btnStartGame').style.display = 'none';
@@ -343,13 +357,13 @@
       startCinematicIntro();
     }
 
-    // --- ฟังก์ชัน Intro ซิงค์ข้อความตรงตามระยะเวลาเสียงเป๊ะ 100% ---
+    // --- ซิงค์ข้อความกับเสียงด้วย Event ---
     function startCinematicIntro() {
       const el = document.getElementById('startCountdownText');
       const sequence = [
-        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audioKey: "ready", defaultTime: 1.5 },
-        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audioKey: "time", defaultTime: 1.5 },
-        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audioKey: "begin", defaultTime: 1.5 }
+        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audioKey: "ready" },
+        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audioKey: "time" },
+        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audioKey: "begin" }
       ];
 
       let index = 0;
@@ -357,28 +371,20 @@
       function playNextStep() {
         if (index < sequence.length) {
           const item = sequence[index];
+          
           el.innerText = item.text;
           el.style.color = item.color;
           el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
-
-          // เล่นเสียงผ่าน AudioContext
-          const soundDuration = playBufferSound(item.audioKey);
-          
-          // ใช้เวลาจริงจากไฟล์เสียง (หากโหลดไม่สำเร็จใช้ defaultTime)
-          const displayDuration = soundDuration > 0 ? (soundDuration * 1000) : (item.defaultTime * 1000);
-
-          // ขึ้นข้อความพร้อมกับเสียงที่เริ่มออกทันที
           el.classList.add('show');
 
-          // จบข้อความเมื่อเสียงจบลงพอดี
-          setTimeout(() => {
+          playSoundAndSync(item.audioKey, () => {
             el.classList.remove('show');
             index++;
-            setTimeout(playNextStep, 200); // เว้นระยะ 0.2 วินาทีระหว่างประโยค
-          }, displayDuration);
+            setTimeout(playNextStep, 100);
+          });
 
         } else {
-          playBufferSound('start');
+          playSoundAndSync('start');
           document.getElementById('startCountdownModal').style.display = 'none';
           gameStarted = true;
         }
@@ -500,7 +506,7 @@
       if (!gameStarted || isQuizActive) return;
       e.preventDefault();
 
-      playBufferSound('shoot');
+      playSoundAndSync('shoot');
 
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -579,7 +585,7 @@
 
     function showQuiz() {
       isQuizActive = true;
-      playBufferSound('quiz');
+      playSoundAndSync('quiz');
 
       const q = questions[currentQuestionIndex];
       document.getElementById('question-title').innerText = q.title;
