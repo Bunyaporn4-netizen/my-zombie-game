@@ -338,15 +338,21 @@
         z.x -= z.speed;
 
         if (z.x < -100) {
-        zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
-        return;
+          zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
+          return;
         }
 
         const img = zombieImages[z.imgIndex];
-        if (img) {
-        ctx.drawImage(img, z.x, z.y, z.w, z.h);
+        // วาดรูปโดยตรงหากโหลดรูปสำเร็จ ถ้าภาพหลุดให้วาดตัวสำรองเพื่อไม่ให้จอดำ
+        if (img && img.complete && img.naturalWidth !== 0) {
+          ctx.drawImage(img, z.x, z.y, z.w, z.h);
+        } else {
+          ctx.fillStyle = '#2ed573';
+          ctx.beginPath();
+          ctx.arc(z.x + z.w / 2, z.y + z.h / 2, z.w / 3, 0, Math.PI * 2);
+          ctx.fill();
         }
-    });
+      });
     }
 
     function drawCrosshair() {
