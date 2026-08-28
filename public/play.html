@@ -42,6 +42,7 @@
       color: #00ff88;
       border: 1px solid #00ff88;
       pointer-events: none;
+      z-index: 5;
     }
     /* ป๊อปอัปคำถาม */
     .modal {
@@ -135,9 +136,17 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    const socket = typeof io !== 'undefined' ? io() : null;
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // กำหนดขนาดตามขนาด 800x600 ของ Container
+    const W = 800;
+    const H = 600;
+
+    // ประกาศตัวแปรคำถามและสถิติ
+    let currentQuestionIndex = 0;
+    let selectedTypes = [];
 
     // รายการคำถาม 20 ข้อ
     const questions = [
@@ -163,336 +172,248 @@
       { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
 
-        let W = window.innerWidth;
-        let H = window.innerHeight;
-        canvas.width = W;
-        canvas.height = H;
+    // โหลดรูปซอมบี้
+    const zombieImages = [new Image(), new Image(), new Image(), new Image()];
+    zombieImages[0].src = '/images/zombie1.png';
+    zombieImages[1].src = '/images/zombie2.png';
+    zombieImages[2].src = '/images/zombie3.png';
+    zombieImages[3].src = '/images/zombie4.png';
 
-        window.addEventListener('resize', () => {
-            W = window.innerWidth;
-            H = window.innerHeight;
-            canvas.width = W;
-            canvas.height = H;
-    });
+    let targetCrosshair = null;
+    let isQuizActive = false;
+    let cannonBalls = [];
+    let particles = [];
+    let cannonAngle = 0;
+    let muzzleFlash = 0;
 
-    // โหลดรูปซอมบี้ทั้ง 4 ชนิด
-        const zombieImages = [new Image(), new Image(), new Image(), new Image()];
-        zombieImages[0].src = '/images/zombie1.png'; // ซอมบี้ตาโต
-        zombieImages[1].src = '/images/zombie2.png'; // ซอมบี้เด็ก
-        zombieImages[2].src = '/images/zombie3.png'; // ซอมบี้ตัวใหญ่
-        zombieImages[3].src = '/images/zombie4.png'; // ซอมบี้หัวกรวย
+    const fireflies = Array.from({ length: 25 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.8,
+      r: Math.random() * 3 + 1,
+      alpha: Math.random(),
+      speed: Math.random() * 0.02 + 0.005
+    }));
 
-        let targetCrosshair = null;
-        let isQuizActive = false;
-        let cannonBalls = [];
-        let particles = [];
-        let cannonAngle = 0;
-        let muzzleFlash = 0;
+    const zombieSpecs = [
+      { imgIndex: 0, w: 75, h: 95,  speed: 2.5, fallbackColor: '#2ed573' },
+      { imgIndex: 1, w: 60, h: 75,  speed: 3.5, fallbackColor: '#ffa502' },
+      { imgIndex: 2, w: 105, h: 120, speed: 1.5, fallbackColor: '#ff4757' },
+      { imgIndex: 3, w: 80, h: 105, speed: 2.2, fallbackColor: '#e1b12c' }
+    ];
 
-        const fireflies = Array.from({ length: 25 }, () => ({
-            x: Math.random() * W,
-            y: Math.random() * H * 0.8,
-            r: Math.random() * 3 + 1,
-            alpha: Math.random(),
-            speed: Math.random() * 0.02 + 0.005
-        }));
-
-        // ตั้งค่าสเปกของซอมบี้ทั้ง 4 ตัว (ขนาด ความเร็ว)
-        const zombieSpecs = [
-            { imgIndex: 0, w: 75, h: 95,  speed: 5.5, fallbackColor: '#2ed573' }, // Zombie 1 (ปกติ)
-            { imgIndex: 1, w: 60, h: 75,  speed: 5.5, fallbackColor: '#ffa502' }, // Zombie 2 (เด็ก-วิ่งไว)
-            { imgIndex: 2, w: 105, h: 120, speed: 5.5, fallbackColor: '#ff4757' }, // Zombie 3 (ตัวใหญ่-ถึก)
-            { imgIndex: 3, w: 80, h: 105, speed: 5.5, fallbackColor: '#e1b12c' }  // Zombie 4 (หัวกรวย)
-        ];
-
-        function getRandomZombie(laneY, extraDelay = 0) {
-            const specIndex = Math.floor(Math.random() * zombieSpecs.length);
-            const spec = zombieSpecs[specIndex];
-            return {
-                imgIndex: spec.imgIndex,
-                x: W + extraDelay + Math.random() * 250,
-                y: laneY - spec.h * 0.5,
-                baseY: laneY - spec.h * 0.5,
-                w: spec.w,
-                h: spec.h,
-                speed: spec.speed,
-                fallbackColor: spec.fallbackColor,
-                alive: true
-            };
-        }
-
-        // สร้างซอมบี้ตั้งต้นกระจายตามเลนต่างๆ
-        let zombies = [
-            getRandomZombie(H * 0.46, 0),
-            getRandomZombie(H * 0.58, 80),
-            getRandomZombie(H * 0.58, 300),
-            getRandomZombie(H * 0.70, 0),
-            getRandomZombie(H * 0.70, 220),
-            getRandomZombie(H * 0.80, 150)
-        ];
-
-        function drawCemeteryBackground() {
-            const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-            skyGrad.addColorStop(0, '#0a1526');
-            skyGrad.addColorStop(0.6, '#132a4a');
-            skyGrad.addColorStop(1, '#1b3b5a');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, W, H);
-
-            const moonX = W * 0.82;
-            const moonY = H * 0.22;
-            const moonRadius = 55;
-
-            const moonGlow = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.8, moonX, moonY, moonRadius * 2.5);
-            moonGlow.addColorStop(0, 'rgba(255, 255, 220, 0.8)');
-            moonGlow.addColorStop(0.5, 'rgba(255, 255, 180, 0.2)');
-            moonGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = moonGlow;
-            ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius * 2.5, 0, Math.PI * 2); ctx.fill();
-
-            ctx.fillStyle = '#fffae6';
-            ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2); ctx.fill();
-
-            ctx.fillStyle = 'rgba(10, 15, 25, 0.55)';
-            ctx.beginPath(); ctx.ellipse(W * 0.2, H * 0.15, 140, 35, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(W * 0.75, H * 0.12, 180, 45, 0, 0, Math.PI * 2); ctx.fill();
-
-            ctx.fillStyle = '#17301c';
-            ctx.beginPath();
-            ctx.moveTo(0, H * 0.55);
-            ctx.quadraticCurveTo(W * 0.25, H * 0.48, W * 0.5, H * 0.53);
-            ctx.quadraticCurveTo(W * 0.75, H * 0.58, W, H * 0.5);
-            ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
-
-            ctx.fillStyle = '#0f2113';
-            ctx.beginPath();
-            ctx.moveTo(0, H * 0.65);
-            ctx.quadraticCurveTo(W * 0.4, H * 0.58, W * 0.7, H * 0.64);
-            ctx.quadraticCurveTo(W * 0.85, H * 0.67, W, H * 0.62);
-            ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
-
-            ctx.fillStyle = '#4a5b6d';
-            ctx.beginPath();
-            ctx.roundRect(W * 0.18, H * 0.46, 75, 90, [35, 35, 0, 0]);
-            ctx.fill();
-            ctx.fillStyle = '#2c3a47';
-            ctx.font = '12px sans-serif';
-            ctx.fillText('R.I.P', W * 0.18 + 23, H * 0.46 + 45);
-
-            const drawCross = (x, y, scale) => {
-                ctx.fillStyle = '#1e272e';
-                ctx.fillRect(x - 4 * scale, y, 8 * scale, 45 * scale);
-                ctx.fillRect(x - 14 * scale, y + 12 * scale, 28 * scale, 7 * scale);
-            };
-            drawCross(W * 0.42, H * 0.50, 1.2);
-            drawCross(W * 0.62, H * 0.54, 0.9);
-            drawCross(W * 0.88, H * 0.52, 1.1);
-
-            fireflies.forEach(f => {
-                f.alpha += f.speed;
-                if (f.alpha > 1 || f.alpha < 0) f.speed = -f.speed;
-                ctx.fillStyle = `rgba(186, 255, 41, ${Math.max(0, f.alpha)})`;
-                ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-            });
-        }
-
-        function drawCannon() {
-            const baseX = 20;
-            const baseY = H * 0.72;
-
-            ctx.save();
-            ctx.translate(baseX, baseY);
-
-            ctx.save();
-            ctx.rotate(cannonAngle);
-
-            const metalGrad = ctx.createLinearGradient(0, -18, 0, 18);
-            metalGrad.addColorStop(0, '#718093');
-            metalGrad.addColorStop(0.5, '#2f3640');
-            metalGrad.addColorStop(1, '#1e272e');
-            ctx.fillStyle = metalGrad;
-            ctx.fillRect(0, -16, 85, 32);
-            ctx.fillStyle = '#e1b12c';
-            ctx.fillRect(75, -18, 10, 36);
-
-            if (muzzleFlash > 0) {
-                ctx.fillStyle = '#ff9f43';
-                ctx.beginPath(); ctx.arc(95, 0, 22, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#ff4757';
-                ctx.beginPath(); ctx.arc(105, 0, 14, 0, Math.PI * 2); ctx.fill();
-                muzzleFlash--;
-            }
-            ctx.restore();
-
-            ctx.fillStyle = '#535c68';
-            ctx.beginPath(); ctx.arc(0, 16, 18, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#2f3640';
-            ctx.beginPath(); ctx.arc(0, 16, 7, 0, Math.PI * 2); ctx.fill();
-
-            ctx.restore();
-        }
-
-        function createExplosion(x, y) {
-            for (let i = 0; i < 22; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 14,
-                    vy: (Math.random() - 0.5) * 14,
-                    radius: Math.random() * 5 + 2,
-                    color: ['#ff4757', '#ffa502', '#badc58', '#ffffff'][Math.floor(Math.random() * 4)],
-                    life: 25
-                });
-            }
-        }
-
-        // ฟังก์ชันลบสีขาวออกจากรูปภาพก่อนแสดงผล
-function drawImageWithoutWhite(img, x, y, w, h) {
-    if (!img.complete || img.naturalWidth === 0) return;
-
-    // สร้าง Offscreen Canvas เพื่อประมวลผลรูป
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = img.naturalWidth;
-    offCanvas.height = img.naturalHeight;
-    const offCtx = offCanvas.getContext('2d');
-    
-    offCtx.drawImage(img, 0, 0);
-    const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-    const data = imgData.data;
-
-    // วนลูปเช็คพิกเซล ถ้าใกล้เคียงสีขาว ให้ปรับ Alpha (ความใส) เป็น 0
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        if (r > 230 && g > 230 && b > 230) {
-            data[i + 3] = 0; // โปร่งใส
-        }
+    function getRandomZombie(laneY, extraDelay = 0) {
+      const specIndex = Math.floor(Math.random() * zombieSpecs.length);
+      const spec = zombieSpecs[specIndex];
+      return {
+        imgIndex: spec.imgIndex,
+        x: W + extraDelay + Math.random() * 150,
+        y: laneY - spec.h * 0.5,
+        baseY: laneY - spec.h * 0.5,
+        w: spec.w,
+        h: spec.h,
+        speed: spec.speed,
+        fallbackColor: spec.fallbackColor,
+        alive: true
+      };
     }
-    
-    offCtx.putImageData(imgData, 0, 0);
-    ctx.drawImage(offCanvas, x, y, w, h);
-}
 
-function drawZombies() {
-    zombies.forEach((z, idx) => {
+    function spawnZombie() {
+      // เกิดซอมบี้ใหม่แทนตัวเดิม
+      const lanes = [H * 0.46, H * 0.58, H * 0.70, H * 0.80];
+      const randomLane = lanes[Math.floor(Math.random() * lanes.length)];
+      zombies.push(getRandomZombie(randomLane, 0));
+    }
+
+    let zombies = [
+      getRandomZombie(H * 0.46, 0),
+      getRandomZombie(H * 0.58, 80),
+      getRandomZombie(H * 0.58, 300),
+      getRandomZombie(H * 0.70, 0),
+      getRandomZombie(H * 0.70, 220),
+      getRandomZombie(H * 0.80, 150)
+    ];
+
+    function drawCemeteryBackground() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#0a1526');
+      skyGrad.addColorStop(0.6, '#132a4a');
+      skyGrad.addColorStop(1, '#1b3b5a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      const moonX = W * 0.82;
+      const moonY = H * 0.22;
+      const moonRadius = 40;
+
+      const moonGlow = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.8, moonX, moonY, moonRadius * 2.5);
+      moonGlow.addColorStop(0, 'rgba(255, 255, 220, 0.8)');
+      moonGlow.addColorStop(0.5, 'rgba(255, 255, 180, 0.2)');
+      moonGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius * 2.5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#fffae6';
+      ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#17301c';
+      ctx.beginPath();
+      ctx.moveTo(0, H * 0.55);
+      ctx.quadraticCurveTo(W * 0.25, H * 0.48, W * 0.5, H * 0.53);
+      ctx.quadraticCurveTo(W * 0.75, H * 0.58, W, H * 0.5);
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+
+      ctx.fillStyle = '#0f2113';
+      ctx.beginPath();
+      ctx.moveTo(0, H * 0.65);
+      ctx.quadraticCurveTo(W * 0.4, H * 0.58, W * 0.7, H * 0.64);
+      ctx.quadraticCurveTo(W * 0.85, H * 0.67, W, H * 0.62);
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+
+      fireflies.forEach(f => {
+        f.alpha += f.speed;
+        if (f.alpha > 1 || f.alpha < 0) f.speed = -f.speed;
+        ctx.fillStyle = `rgba(186, 255, 41, ${Math.max(0, f.alpha)})`;
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    function drawCannon() {
+      const baseX = 40;
+      const baseY = H * 0.85;
+
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.save();
+      ctx.rotate(cannonAngle);
+
+      const metalGrad = ctx.createLinearGradient(0, -15, 0, 15);
+      metalGrad.addColorStop(0, '#718093');
+      metalGrad.addColorStop(0.5, '#2f3640');
+      metalGrad.addColorStop(1, '#1e272e');
+      ctx.fillStyle = metalGrad;
+      ctx.fillRect(0, -12, 60, 24);
+
+      if (muzzleFlash > 0) {
+        ctx.fillStyle = '#ff9f43';
+        ctx.beginPath(); ctx.arc(70, 0, 15, 0, Math.PI * 2); ctx.fill();
+        muzzleFlash--;
+      }
+      ctx.restore();
+
+      ctx.fillStyle = '#535c68';
+      ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function createExplosion(x, y) {
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          radius: Math.random() * 4 + 2,
+          color: ['#ff4757', '#ffa502', '#badc58', '#ffffff'][Math.floor(Math.random() * 4)],
+          life: 20
+        });
+      }
+    }
+
+    function drawZombies() {
+      zombies.forEach((z, idx) => {
         if (!z.alive) return;
-        
         z.x -= z.speed;
 
-        if (z.x < 50) {
-            zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
-            return;
+        if (z.x < -100) {
+          zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
+          return;
         }
 
         const img = zombieImages[z.imgIndex];
         if (img.complete && img.naturalWidth > 0) {
-            drawImageWithoutWhite(img, z.x, z.y, z.w, z.h);
+          ctx.drawImage(img, z.x, z.y, z.w, z.h);
+        } else {
+          ctx.fillStyle = z.fallbackColor;
+          ctx.fillRect(z.x, z.y, z.w, z.h);
         }
+      });
+    }
+
+    function drawCrosshair() {
+      if (!targetCrosshair) return;
+      const { x, y } = targetCrosshair;
+      ctx.strokeStyle = '#ff4757';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isQuizActive) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      targetCrosshair = { x: clickX, y: clickY };
+
+      const startX = 40;
+      const startY = H * 0.85;
+      
+      cannonAngle = Math.atan2(clickY - startY, clickX - startX);
+      muzzleFlash = 4;
+
+      let hit = zombies.find(z => z.alive && 
+        clickX >= z.x && clickX <= z.x + z.w &&
+        clickY >= z.y && clickY <= z.y + z.h
+      );
+
+      const speed = 20;
+      cannonBalls.push({
+        x: startX, y: startY,
+        vx: Math.cos(cannonAngle) * speed,
+        vy: Math.sin(cannonAngle) * speed,
+        tx: clickX, ty: clickY,
+        hit: hit
+      });
     });
-}
-        function drawCrosshair() {
-            if (!targetCrosshair) return;
-            const { x, y } = targetCrosshair;
-            ctx.strokeStyle = '#ff4757';
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x - 30, y); ctx.lineTo(x + 30, y);
-            ctx.moveTo(x, y - 30); ctx.lineTo(x, y + 30);
-            ctx.stroke();
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, W, H);
-
-            drawCemeteryBackground();
-            drawCannon();
-            drawZombies();
-
-            cannonBalls.forEach((b, index) => {
-                b.x += b.vx;
-                b.y += b.vy;
-
-                ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
-                ctx.beginPath(); ctx.arc(b.x - b.vx * 0.3, b.y - b.vy * 0.3, 7, 0, Math.PI * 2); ctx.fill();
-
-                ctx.fillStyle = '#2f3640';
-                ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI * 2); ctx.fill();
-
-                if (Math.hypot(b.x - b.tx, b.y - b.ty) < 18) {
-                    cannonBalls.splice(index, 1);
-                    targetCrosshair = null;
-                    createExplosion(b.tx, b.ty);
-                    if (b.hit) {
-                        b.hit.alive = false;
-                        setTimeout(showQuiz, 300);
-                    }
-                }
-            });
-
-            particles.forEach((p, index) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
-                if (p.life <= 0) particles.splice(index, 1);
-            });
-
-            drawCrosshair();
-            requestAnimationFrame(gameLoop);
-        }
-
-        canvas.addEventListener('pointerdown', (e) => {
-            if (isQuizActive) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            targetCrosshair = { x: clickX, y: clickY };
-
-            const startX = 20;
-            const startY = H * 0.72;
-            
-            cannonAngle = Math.atan2(clickY - startY, clickX - startX);
-            muzzleFlash = 4;
-
-            let hit = zombies.find(z => z.alive && 
-                clickX >= z.x && clickX <= z.x + z.w &&
-                clickY >= z.y && clickY <= z.y + z.h
-            );
-
-            const speed = 23;
-            cannonBalls.push({
-                x: startX, y: startY,
-                vx: Math.cos(cannonAngle) * speed,
-                vy: Math.sin(cannonAngle) * speed,
-                tx: clickX, ty: clickY,
-                hit: hit
-            });
-        });
-
-        function showQuiz() {
-            isQuizActive = true;
-            document.getElementById('quiz-modal').style.display = 'flex';
-        }
-
-        function submitAnswer(choice) {
-            if (socket) socket.emit('submitVote', choice);
-            document.getElementById('quiz-modal').style.display = 'none';
-            document.getElementById('end-screen').style.display = 'block';
-        }
 
     function gameLoop() {
-      update();
-      draw();
+      ctx.clearRect(0, 0, W, H);
+
+      drawCemeteryBackground();
+      drawCannon();
+      drawZombies();
+
+      cannonBalls.forEach((b, index) => {
+        b.x += b.vx;
+        b.y += b.vy;
+
+        ctx.fillStyle = '#ffbb00';
+        ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill();
+
+        if (Math.hypot(b.x - b.tx, b.y - b.ty) < 15) {
+          cannonBalls.splice(index, 1);
+          targetCrosshair = null;
+          createExplosion(b.tx, b.ty);
+          if (b.hit) {
+            b.hit.alive = false;
+            setTimeout(showQuiz, 200);
+          }
+        }
+      });
+
+      particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+        if (p.life <= 0) particles.splice(index, 1);
+      });
+
+      drawCrosshair();
       requestAnimationFrame(gameLoop);
     }
 
-    gameLoop();
-
-    // แสดงคำถามเมื่อยิงซอมบี้
     function showQuiz() {
       isQuizActive = true;
       const q = questions[currentQuestionIndex];
@@ -527,7 +448,6 @@ function drawZombies() {
       }
     }
 
-    // เมื่อยิงครบ 20 ตัว -> รอนับถอยหลัง 10 วินาที
     function finishGame() {
       isQuizActive = true;
       document.getElementById('resultModal').style.display = 'flex';
@@ -545,7 +465,6 @@ function drawZombies() {
       }, 1000);
     }
 
-    // แสดงผลสรุปคุณคือใคร
     function showFinalResult() {
       document.getElementById('timerText').style.display = 'none';
 
@@ -568,8 +487,11 @@ function drawZombies() {
         <p style="margin-bottom:0;">คุณได้พิชิตซอมบี้ครบทั้ง 20 ตัวเรียบร้อยแล้ว!</p>
       `;
 
-      socket.emit('submitAnswer', { optionText: topType });
+      if (socket) socket.emit('submitAnswer', { optionText: topType });
     }
+
+    // เริ่มวนลูปเกม
+    gameLoop();
   </script>
 </body>
 </html>
