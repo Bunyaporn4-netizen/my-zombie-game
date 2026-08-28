@@ -58,7 +58,7 @@
       z-index: 5;
     }
 
-    /* หน้าจอ Intro สไตล์ Cinematic ตามคลิป */
+    /* หน้าจอ Intro สไตล์ Cinematic */
     #startCountdownModal {
       display: flex;
       position: absolute;
@@ -72,7 +72,26 @@
       border-radius: 12px;
     }
 
+    /* ปุ่มกดเพื่อปลดล็อกเสียงของเบราว์เซอร์ */
+    #btnStartGame {
+      padding: 14px 32px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffffff;
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    #btnStartGame:active {
+      transform: scale(0.95);
+    }
+
     #startCountdownText {
+      display: none;
       font-size: 48px;
       font-weight: 900;
       color: #ffffff;
@@ -168,8 +187,9 @@
     <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <!-- หน้าจอ Cinematic Intro ก่อนเริ่มเกม -->
+    <!-- หน้าจอ Intro สไตล์ Cinematic -->
     <div id="startCountdownModal">
+      <button id="btnStartGame" onclick="initAndStartCinematic()">TAP TO START</button>
       <div id="startCountdownText">ARE YOU READY?</div>
     </div>
 
@@ -302,7 +322,23 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- ระบบ Cinematic Intro เปลี่ยนตามจังหวะคลิป ---
+    // --- ฟังก์ชันเมื่อผู้ใช้กดปุ่ม TAP TO START เพื่อปลดล็อกระบบเสียง ---
+    function initAndStartCinematic() {
+      document.getElementById('btnStartGame').style.display = 'none';
+      document.getElementById('startCountdownText').style.display = 'block';
+
+      // เล่นและหยุดเสียงทันทีเพื่อปลดล็อกสิทธิ์ Audio context บนมือถือ/เบราว์เซอร์
+      const allAudio = [readySound, shootSound, quizSound, beepSound, startSound, bgm];
+      allAudio.forEach(audio => {
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }).catch(() => {});
+      });
+
+      startCinematicIntro();
+    }
+
     function startCinematicIntro() {
       const el = document.getElementById('startCountdownText');
       const sequence = [
@@ -321,7 +357,7 @@
           el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
           
           readySound.currentTime = 0;
-          readySound.play().catch(err => {});
+          readySound.play().catch(err => console.log("Audio play error:", err));
 
           el.classList.add('show');
 
@@ -333,7 +369,7 @@
 
         } else {
           startSound.currentTime = 0;
-          startSound.play().catch(err => {});
+          startSound.play().catch(err => console.log("Audio play error:", err));
           document.getElementById('startCountdownModal').style.display = 'none';
           gameStarted = true;
         }
@@ -616,8 +652,7 @@
       if (socket) socket.emit('submitAnswer', { optionText: topType });
     }
 
-    // เริ่มต้นอินโทร Cinematic ทันทีเมื่อโหลดหน้าเว็บ
-    startCinematicIntro();
+    // เริ่ม Game Loop เรนเดอร์ฉากหลัง
     gameLoop();
   </script>
 </body>
