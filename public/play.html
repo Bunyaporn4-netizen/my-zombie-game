@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Zombie Quiz Game - Clean Version</title>
+  <title>Zombie Quiz Game</title>
   <style>
     * { 
       box-sizing: border-box; 
@@ -162,6 +162,17 @@
     const W = 800;
     const H = 600;
 
+    // --- โหลดระบบเสียง (Audio) ---
+    const bgm = new Audio('/audio/bgm.mp3');
+    bgm.loop = true;
+    bgm.volume = 0.3; // ความดังเพลงประกอบ (0.0 - 1.0)
+
+    const shootSound = new Audio('/audio/shoot.mp3');
+    shootSound.volume = 0.5;
+
+    const hitSound = new Audio('/audio/hit.mp3');
+    hitSound.volume = 0.6;
+
     let currentQuestionIndex = 0;
     let selectedTypes = [];
 
@@ -188,12 +199,8 @@
       { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
 
-    // โหลดรูปภาพตรงๆ ไม่ผ่านการแต่งภาพใน JS
     const zombieImages = [new Image(), new Image(), new Image(), new Image()];
     zombieImages.forEach((img, i) => {
-      img.onerror = () => {
-        console.warn(`โหลดรูป /images/zombie${i+1}.png ไม่สำเร็จ จะใช้วงกลมแทนชั่วคราว`);
-      };
       img.src = `/images/zombie${i+1}.png`;
     });
 
@@ -332,6 +339,7 @@
       }
     }
 
+    // วาดซอมบี้จากรูปภาพโดยตรง (ไม่มีวงกลมเขียวสำรองแล้ว)
     function drawZombies() {
       zombies.forEach((z, idx) => {
         if (!z.alive) return;
@@ -343,14 +351,8 @@
         }
 
         const img = zombieImages[z.imgIndex];
-        // วาดรูปโดยตรงหากโหลดรูปสำเร็จ ถ้าภาพหลุดให้วาดตัวสำรองเพื่อไม่ให้จอดำ
-        if (img && img.complete && img.naturalWidth !== 0) {
+        if (img) {
           ctx.drawImage(img, z.x, z.y, z.w, z.h);
-        } else {
-          ctx.fillStyle = '#2ed573';
-          ctx.beginPath();
-          ctx.arc(z.x + z.w / 2, z.y + z.h / 2, z.w / 3, 0, Math.PI * 2);
-          ctx.fill();
         }
       });
     }
@@ -363,8 +365,17 @@
     }
 
     function handlePointer(e) {
+      // สั่งเล่นเพลงประกอบเมื่อกดหน้าจอครั้งแรก (ปลดล็อกข้อจำกัดของเบราว์เซอร์)
+      if (bgm.paused) {
+        bgm.play().catch(err => console.log("Audio play blocked:", err));
+      }
+
       if (isQuizActive) return;
       e.preventDefault();
+
+      // เล่นเสียงยิงปืน
+      shootSound.currentTime = 0;
+      shootSound.play().catch(err => {});
 
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -420,7 +431,12 @@
           cannonBalls.splice(index, 1);
           targetCrosshair = null;
           createExplosion(b.tx, b.ty);
+
           if (b.hit) {
+            // เล่นเสียงซอมบี้โดนยิง/ระเบิด
+            hitSound.currentTime = 0;
+            hitSound.play().catch(err => {});
+
             b.hit.alive = false;
             setTimeout(showQuiz, 200);
           }
