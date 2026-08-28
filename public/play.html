@@ -471,29 +471,27 @@
     }
 
       function submitPlayerName() {
-      const inputElement = document.getElementById('playerNameInput');
-      const nameValue = inputElement ? inputElement.value.trim() : '';
+        const input = document.getElementById('playerNameInput');
+        if (!input || !input.value.trim()) {
+          alert("กรุณากรอกชื่อก่อนเล่นครับ!");
+          return;
+        }
 
-      if (!nameValue) {
-        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
-        return;
+        // 1. ใส่ชื่อผู้เล่น
+        playerName = input.value.trim();
+        const playerDisplay = document.querySelector('.user-info span, #displayName, #playerDisplayName');
+        if (playerDisplay) playerDisplay.innerText = "ผู้เล่น: " + playerName;
+
+        // 2. ซ่อนหน้าป๊อปอัป
+        document.getElementById('nameInputModal').style.display = 'none';
+        const startModal = document.getElementById('startCountdownModal');
+        if (startModal) startModal.style.display = 'none';
+
+        // 3. เริ่มเกมและดึงคำถาม
+        if (typeof initZombies === 'function') initZombies();
+        if (typeof gameLoop === 'function') gameLoop();
+        if (typeof startNewQuestion === 'function') startNewQuestion();
       }
-
-      playerName = nameValue;
-
-      const displayName = document.getElementById('displayName');
-      if (displayName) displayName.innerText = playerName;
-
-      const nameModal = document.getElementById('nameInputModal');
-      if (nameModal) nameModal.style.display = 'none';
-
-      const countdownModal = document.getElementById('startCountdownModal');
-      if (countdownModal) countdownModal.style.display = 'none';
-
-      if (typeof initZombies === 'function') initZombies();
-      if (typeof gameLoop === 'function') gameLoop();
-      if (typeof startNewQuestion === 'function') startNewQuestion();
-    }
 
     let gameStarted = false;
     let currentQuestionIndex = 0;
