@@ -342,9 +342,9 @@
       <div class="score-board">⭐ คะแนน: <span id="scoreText">0</span></div>
     </div>
 
-    <<div id="nameInputModal">
+    <div id="nameInputModal">
       <div class="input-box">
-        <h2>🎮 ต้อนรับผู้ลุยอนาคต</h2>
+        <h2>🎮 ต้อนรับผู้ลุยซอมบี้</h2>
         <p style="font-size: 0.9rem; color: #aaa;">กรุณากรอกชื่อ-นามสกุลก่อนเข้าสู่เกม</p>
         <input type="text" id="playerNameInput" placeholder="ระบุชื่อ - นามสกุลของคุณ" maxlength="40">
         <button class="btn-main" onclick="submitPlayerName()">ตกลง</button>
@@ -367,33 +367,23 @@
       <div class="modal-content">
         <h2>🎉 กำลังประมวลผลผลลัพธ์...</h2>
         <p style="font-size: 0.9rem;">กรุณารอสักครู่ ระบบกำลังคำนวณตัวตนของคุณ</p>
-        <div id="timerText">5</div>
+        <div id="timerText">10</div>
         <div id="result-box"></div>
       </div>
     </div>
 
-    <!-- Modal แสดงสถิติการจัดอันดับ -->
-    <div id="rankingModal" class="modal" style="display: none;">
-      <div class="modal-content" style="background: #1a1a1a; color: white; padding: 25px; border-radius: 15px; border: 2px solid #ff4444; max-width: 450px; margin: auto;">
-        <h2 style="text-align: center; margin-bottom: 5px;">📊 สถิติการเลือกสายเรียน</h2>
-        <p style="text-align: center; color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-          👨‍🎓 นักเรียนที่มาตอบทั้งหมด: <span id="totalStudentsText" style="color: #00ff88; font-weight: bold;">0</span> คน
-        </p>
+    <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
+    <div id="rankingModal" class="modal">
+      <div class="modal-content">
+        <h2>📊 สถิติการเลือกสายเรียน</h2>
+        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปสัดส่วนอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
+        
+        <div id="rankingContainer" class="ranking-list"></div>
 
-        <!-- ส่วนที่จะให้ JavaScript เติมข้อมูลจริงเข้าไป -->
-        <div id="rankingContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
-
-        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn-next" onclick="location.reload()" style="padding: 10px 20px; border-radius: 20px; background: #00ff88; border: none; font-weight: bold; cursor: pointer;">
-            🔄 เล่นใหม่อีกครั้ง
-          </button>
-
-          <button id="btnAdminReset" class="btn-next" onclick="resetStatsByAdmin()" style="display: none; padding: 10px 20px; border-radius: 20px; background: #ff4444; color: white; border: none; font-weight: bold; cursor: pointer;">
-            🗑️ ล้างสถิติ (แอดมิน)
-          </button>
-        </div>
+        <button class="btn-next" onclick="location.reload()">🔄 เล่นใหม่อีกครั้ง</button>
       </div>
     </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -442,9 +432,9 @@
     };
 
     audioElements.start.loop = true;
-    audioElements.start.volume = 0.8;
+    audioElements.start.volume = 0.3;
     audioElements.quiz.loop = true;
-    audioElements.quiz.volume = 0.8;
+    audioElements.quiz.volume = 0.5;
 
     function playSound(key) {
       const audio = audioElements[key];
@@ -470,259 +460,44 @@
       }
     }
 
-      function submitPlayerName() {
-        const input = document.getElementById('playerNameInput');
-        if (!input || !input.value.trim()) {
-          alert("กรุณากรอกชื่อก่อนเล่นครับ!");
-          return;
-        }
-
-        // 1. ใส่ชื่อผู้เล่น
-        playerName = input.value.trim();
-        const playerDisplay = document.querySelector('.user-info span, #displayName, #playerDisplayName');
-        if (playerDisplay) playerDisplay.innerText = "ผู้เล่น: " + playerName;
-
-        // 2. ซ่อนหน้าป๊อปอัป
-        document.getElementById('nameInputModal').style.display = 'none';
-        const startModal = document.getElementById('startCountdownModal');
-        if (startModal) startModal.style.display = 'none';
-
-        // 3. เริ่มเกมและดึงคำถาม
-        if (typeof initZombies === 'function') initZombies();
-        if (typeof gameLoop === 'function') gameLoop();
-        if (typeof startNewQuestion === 'function') startNewQuestion();
+    function submitPlayerName() {
+      const input = document.getElementById('playerNameInput').value.trim();
+      if (!input) {
+        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
+        return;
       }
+      playerName = input;
+      document.getElementById('displayName').innerText = playerName;
+      document.getElementById('nameInputModal').style.display = 'none';
+      document.getElementById('startCountdownModal').style.display = 'flex';
+    }
 
     let gameStarted = false;
     let currentQuestionIndex = 0;
     let selectedTypes = [];
 
     const questions = [
-    {
-        title: "1. ถ้าครูให้เลือกทำโครงงานที่ต้องใช้เวลาหลายสัปดาห์ คุณอยากทำแบบใดมากที่สุด?",
-        options: [
-        { text: "A. ศึกษาปัญหาของคนในชุมชนและเสนอแนวทางแก้ไข", type: "ศิลป์-สังคม" },
-        { text: "B. ทดลองหาคำตอบจากการเปลี่ยนตัวแปรต่าง ๆ", type: "วิทย์-คณิต" },
-        { text: "C. สำรวจพฤติกรรมการซื้อของนักเรียนแล้วนำข้อมูลมาวิเคราะห์", type: "ศิลป์-คำนวณ" },
-        { text: "D. สร้างชิ้นงานหรือผลิตภัณฑ์ที่สามารถนำไปใช้ได้จริง", type: "สายอาชีพ" },
-        { text: "E. ศึกษาคำหรือวัฒนธรรมของประเทศที่สนใจ", type: "ศิลป์-ภาษา" }
-        ]
-    },
-    {
-        title: "2. เพื่อนในกลุ่มส่งข้อความมาว่า “ช่วยคิดวิธีนำเสนองานให้คนฟังสนใจหน่อย” คุณจะเลือกทำอะไร?",
-        options: [
-        { text: "A. ทำกราฟและตัวเลขให้เห็นข้อมูลชัดเจน", type: "ศิลป์-คำนวณ" },
-        { text: "B. คิดเรื่องราวและประเด็นทางสังคมที่เชื่อมโยงกับหัวข้อ", type: "ศิลป์-สังคม" },
-        { text: "C. ออกแบบและทำชิ้นงานประกอบการนำเสนอ", type: "สายอาชีพ" },
-        { text: "D. คิดคำพูดหรือเรื่องราวให้น่าสนใจและเข้าใจง่าย", type: "ศิลป์-ภาษา" },
-        { text: "E. อธิบายหลักการหรือข้อมูลทางวิทยาศาสตร์ที่เกี่ยวข้อง", type: "วิทย์-คณิต" }
-        ]
-    },
-    {
-        title: "3. ถ้าคุณได้รับเงิน 1,000 บาทเพื่อทำกิจกรรมที่ตัวเองสนใจ คุณจะนำไปทำอะไร?",
-        options: [
-        { text: "A. ซื้ออุปกรณ์ทดลองเพื่อหาคำตอบเกี่ยวกับสิ่งที่สงสัย", type: "วิทย์-คณิต" },
-        { text: "B. ซื้อหนังสือหรือสื่อสำหรับเรียนภาษาใหม่", type: "ศิลป์-ภาษา" },
-        { text: "C. ซื้อวัสดุเพื่อทำของใช้หรือผลิตภัณฑ์", type: "สายอาชีพ" },
-        { text: "D. ซื้ออุปกรณ์เพื่อทำกราฟ ตาราง หรือวิเคราะห์ข้อมูล", type: "ศิลป์-คำนวณ" },
-        { text: "E. ซื้อหนังสือเกี่ยวกับประวัติศาสตร์หรือเรื่องราวของสังคม", type: "ศิลป์-สังคม" }
-        ]
-    },
-    {
-        title: "4. ถ้าต้องเลือกหัวข้อหนึ่งเพื่อพูดหน้าชั้น คุณอยากพูดเรื่องใด?",
-        options: [
-        { text: "A. การเปลี่ยนแปลงของสภาพอากาศและผลต่อสิ่งมีชีวิต", type: "วิทย์-คณิต" },
-        { text: "B. วัฒนธรรมและวิถีชีวิตของคนในประเทศต่าง ๆ", type: "ศิลป์-ภาษา" },
-        { text: "C. ปัญหาที่เกิดขึ้นในชุมชนของเรา", type: "ศิลป์-สังคม" },
-        { text: "D. การวางแผนรายรับรายจ่ายของวัยรุ่น", type: "ศิลป์-คำนวณ" },
-        { text: "E. วิธีสร้างผลิตภัณฑ์ง่าย ๆ เพื่อสร้างรายได้", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "5. ถ้าครูให้ปัญหาว่า “โรงเรียนใช้ไฟฟ้ามากเกินไป” คุณอยากรับผิดชอบส่วนใด?",
-        options: [
-        { text: "A. สำรวจว่าพฤติกรรมของนักเรียนเกี่ยวข้องกับปัญหาอย่างไร", type: "ศิลป์-สังคม" },
-        { text: "B. คำนวณค่าไฟและเปรียบเทียบข้อมูลแต่ละเดือน", type: "ศิลป์-คำนวณ" },
-        { text: "C. ทดลองวิธีลดการใช้ไฟฟ้าและเก็บผลการทดลอง", type: "วิทย์-คณิต" },
-        { text: "D. ออกแบบอุปกรณ์หรือวิธีช่วยลดการใช้ไฟ", type: "สายอาชีพ" },
-        { text: "E. ทำสื่อประชาสัมพันธ์ให้คนเข้าใจและปฏิบัติตาม", type: "ศิลป์-ภาษา" }
-        ]
-    },
-    {
-        title: "6. ถ้าต้องทำงานกลุ่มกับเพื่อนที่มีความคิดเห็นต่างกัน คุณมักจะ…",
-        options: [
-        { text: "A. ใช้ข้อมูลและเหตุผลมาช่วยตัดสิน", type: "วิทย์-คณิต" },
-        { text: "B. ช่วยพูดคุยให้ทุกคนเข้าใจกัน", type: "ศิลป์-ภาษา" },
-        { text: "C. ทดลองแต่ละแนวทางแล้วดูผลที่เกิดขึ้น", type: "สายอาชีพ" },
-        { text: "D. เปรียบเทียบข้อดีข้อเสียของแต่ละทางเลือก", type: "ศิลป์-คำนวณ" },
-        { text: "E. พยายามหาวิธีที่นำไปทำได้จริง", type: "ศิลป์-สังคม" }
-        ]
-    },
-    {
-        title: "7. ถ้าคุณมีเวลาว่าง 3 ชั่วโมงหลังเลิกเรียน คุณมีแนวโน้มจะเลือกทำอะไร?",
-        options: [
-        { text: "A. ดูสารคดีเกี่ยวกับสังคม ประวัติศาสตร์ หรือเหตุการณ์ต่าง ๆ", type: "ศิลป์-สังคม" },
-        { text: "B. ฝึกภาษาโดยดูหนังหรือฟังเพลงต่างประเทศ", type: "ศิลป์-ภาษา" },
-        { text: "C. ทำอาหาร งานฝีมือ หรือทดลองทำของด้วยตัวเอง", type: "สายอาชีพ" },
-        { text: "D. ฝึกโจทย์คณิตศาสตร์หรือคิดปัญหา", type: "ศิลป์-คำนวณ" },
-        { text: "E. ทดลองหรือค้นคว้าเรื่องวิทยาศาสตร์ที่สนใจ", type: "วิทย์-คณิต" }
-        ]
-    },
-    {
-        title: "8. ถ้าเพื่อนขอให้ช่วยวางแผนขายของในงานโรงเรียน คุณอยากทำส่วนใด?",
-        options: [
-        { text: "A. คิดต้นทุน กำไร และจำนวนสินค้าที่ควรขาย", type: "ศิลป์-คำนวณ" },
-        { text: "B. ทำผลิตภัณฑ์หรือจัดเตรียมสินค้า", type: "สายอาชีพ" },
-        { text: "C. ศึกษาว่าคนในโรงเรียนสนใจสินค้าประเภทใด", type: "ศิลป์-สังคม" },
-        { text: "D. คิดคำโฆษณาหรือพูดแนะนำสินค้า", type: "ศิลป์-ภาษา" },
-        { text: "E. ทดลองหาวิธีทำสินค้าให้มีคุณภาพดีขึ้น", type: "วิทย์-คณิต" }
-        ]
-    },
-    {
-        title: "9. ถ้าคุณต้องเลือกกิจกรรมในค่ายหนึ่งวัน คุณจะเลือกกิจกรรมใด?",
-        options: [
-        { text: "A. ทดลองทางวิทยาศาสตร์", type: "วิทย์-คณิต" },
-        { text: "B. สนทนากับชาวต่างชาติ", type: "ศิลป์-ภาษา" },
-        { text: "C. จำลองการแก้ปัญหาของชุมชน", type: "ศิลป์-สังคม" },
-        { text: "D. วางแผนธุรกิจจำลอง", type: "ศิลป์-คำนวณ" },
-        { text: "E. ฝึกทำอาหารหรือสร้างสิ่งของ", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "10. ถ้าครูให้เลือกหนังสือหนึ่งเล่มไปอ่าน คุณจะเลือกแบบใด?",
-        options: [
-        { text: "A. หนังสือเกี่ยวกับการเงินและการวางแผน", type: "ศิลป์-คำนวณ" },
-        { text: "B. หนังสือวิทยาศาสตร์หรือเทคโนโลยี", type: "วิทย์-คณิต" },
-        { text: "C. หนังสือภาษา วรรณกรรม หรือเรื่องราวจากต่างประเทศ", type: "ศิลป์-ภาษา" },
-        { text: "D. หนังสือเกี่ยวกับประวัติศาสตร์และสังคม", type: "ศิลป์-สังคม" },
-        { text: "E. หนังสือสอนทำอาหาร งานช่าง หรือทักษะอาชีพ", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "11. ถ้าโทรศัพท์หรืออุปกรณ์ไฟฟ้าที่บ้านเสีย คุณอยากทำอะไร?",
-        options: [
-        { text: "A. ค้นหาข้อมูลว่าปัญหาอาจเกิดจากอะไร", type: "วิทย์-คณิต" },
-        { text: "B. พยายามสื่อสารกับคนอื่นเพื่อขอคำแนะนำ", type: "ศิลป์-ภาษา" },
-        { text: "C. คิดค่าใช้จ่ายว่าซ่อมหรือซื้อใหม่แบบไหนคุ้มกว่า", type: "ศิลป์-คำนวณ" },
-        { text: "D. ลองตรวจสอบหรือซ่อมด้วยตัวเอง", type: "สายอาชีพ" },
-        { text: "E. สนใจว่าการใช้อุปกรณ์เหล่านี้ส่งผลต่อชีวิตประจำวันอย่างไร", type: "ศิลป์-สังคม" }
-        ]
-    },
-    {
-        title: "12. ถ้าต้องทำโปสเตอร์เกี่ยวกับปัญหาสังคม คุณอยากนำเสนอเรื่องใด?",
-        options: [
-        { text: "A. ปัญหาขยะในชุมชน", type: "ศิลป์-สังคม" },
-        { text: "B. การใช้เงินอย่างเหมาะสมของวัยรุ่น", type: "ศิลป์-คำนวณ" },
-        { text: "C. ผลกระทบของมลพิษต่อสุขภาพและสิ่งแวดล้อม", type: "วิทย์-คณิต" },
-        { text: "D. ความแตกต่างของวัฒนธรรมในแต่ละประเทศ", type: "ศิลป์-ภาษา" },
-        { text: "E. การสร้างอาชีพจากทรัพยากรในท้องถิ่น", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "13. ถ้าครูให้ข้อมูลจำนวนมากมา 1 ชุด คุณอยากทำอะไรกับข้อมูลนั้น?",
-        options: [
-        { text: "A. หาความสัมพันธ์และคำนวณตัวเลข", type: "ศิลป์-คำนวณ" },
-        { text: "B. หาคำอธิบายว่าข้อมูลเกี่ยวข้องกับธรรมชาติอย่างไร", type: "วิทย์-คณิต" },
-        { text: "C. อ่านและตีความความคิดเห็นของผู้คน", type: "ศิลป์-สังคม" },
-        { text: "D. นำข้อมูลไปสร้างแผนการทำงานจริง", type: "สายอาชีพ" },
-        { text: "E. เรียบเรียงข้อมูลให้เป็นเรื่องที่คนอื่นเข้าใจง่าย", type: "ศิลป์-ภาษา" }
-        ]
-    },
-    {
-        title: "14. ถ้าต้องจัดกิจกรรมให้เด็กในชุมชน คุณอยากทำกิจกรรมแบบใด?",
-        options: [
-        { text: "A. กิจกรรมทดลองวิทยาศาสตร์ง่าย ๆ", type: "วิทย์-คณิต" },
-        { text: "B. กิจกรรมฝึกพูดภาษาอังกฤษ", type: "ศิลป์-ภาษา" },
-        { text: "C. กิจกรรมเรียนรู้ประวัติและวัฒนธรรมท้องถิ่น", type: "ศิลป์-สังคม" },
-        { text: "D. กิจกรรมฝึกทำของใช้หรืออาหาร", type: "สายอาชีพ" },
-        { text: "E. กิจกรรมวางแผนการใช้เงินอย่างง่าย", type: "ศิลป์-คำนวณ" }
-        ]
-    },
-    {
-        title: "15. ถ้าต้องเลือกงานที่ทำติดต่อกันหลายชั่วโมง คุณคิดว่างงานใดเหมาะกับคุณที่สุด?",
-        options: [
-        { text: "A. วิเคราะห์ข้อมูลและหาคำตอบ", type: "ศิลป์-คำนวณ" },
-        { text: "B. พูดคุยหรือทำงานกับผู้คน", type: "ศิลป์-ภาษา" },
-        { text: "C. ลงมือสร้างหรือซ่อมสิ่งของ", type: "สายอาชีพ" },
-        { text: "D. ค้นคว้าปัญหาและหาคำอธิบาย", type: "วิทย์-คณิต" },
-        { text: "E. อ่านและวิเคราะห์เรื่องราวของผู้คนหรือสังคม", type: "ศิลป์-สังคม" }
-        ]
-    },
-    {
-        title: "16. ถ้าต้องเลือกสิ่งหนึ่งเพื่อพัฒนาตัวเองในช่วงปิดเทอม คุณจะเลือกอะไร?",
-        options: [
-        { text: "A. เรียนภาษาใหม่", type: "ศิลป์-ภาษา" },
-        { text: "B. ฝึกการใช้โปรแกรมคำนวณหรือจัดการข้อมูล", type: "ศิลป์-คำนวณ" },
-        { text: "C. ฝึกทักษะทำอาหาร งานช่าง หรือการสร้างของ", type: "สายอาชีพ" },
-        { text: "D. เรียนรู้เรื่องสังคมและเหตุการณ์ปัจจุบัน", type: "ศิลป์-สังคม" },
-        { text: "E. ทดลองทำโครงงานวิทยาศาสตร์", type: "วิทย์-คณิต" }
-        ]
-    },
-    {
-        title: "17. ถ้าครูให้คุณเป็นหัวหน้าทีม คุณจะเริ่มต้นอย่างไร?",
-        options: [
-        { text: "A. แบ่งหน้าที่และวางแผนตามความถนัดของแต่ละคน", type: "ศิลป์-สังคม" },
-        { text: "B. กำหนดเป้าหมายและขั้นตอนอย่างชัดเจน", type: "ศิลป์-คำนวณ" },
-        { text: "C. พูดคุยกับสมาชิกเพื่อรับฟังความคิดเห็น", type: "ศิลป์-ภาษา" },
-        { text: "D. ศึกษาข้อมูลและหาวิธีแก้ปัญหาที่เหมาะสม", type: "วิทย์-คณิต" },
-        { text: "E. วางแผนการลงมือทำให้เสร็จตามเวลาที่กำหนด", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "18. ถ้าคุณเห็นข่าวหนึ่งเรื่องบนอินเทอร์เน็ต สิ่งแรกที่คุณอยากทำคืออะไร?",
-        options: [
-        { text: "A. ตรวจสอบว่าข้อมูลนั้นมีหลักฐานทางวิทยาศาสตร์หรือไม่", type: "วิทย์-คณิต" },
-        { text: "B. ดูว่าข่าวนั้นเขียนหรือใช้ภาษาอย่างไร", type: "ศิลป์-ภาษา" },
-        { text: "C. คิดว่าข่าวนี้ส่งผลต่อคนในสังคมอย่างไร", type: "ศิลป์-สังคม" },
-        { text: "D. ดูตัวเลขหรือข้อมูลประกอบข่าว", type: "ศิลป์-คำนวณ" },
-        { text: "E. คิดว่าข้อมูลนี้นำไปใช้แก้ปัญหาจริงได้อย่างไร", type: "สายอาชีพ" }
-        ]
-    },
-    {
-        title: "19. ถ้าต้องเลือกงานอดิเรกใหม่ คุณจะเลือกอะไร?",
-        options: [
-        { text: "A. ฝึกพูดหรือเขียนภาษาต่างประเทศ", type: "ศิลป์-ภาษา" },
-        { text: "B. ทำของตกแต่งหรือประดิษฐ์ของ", type: "สายอาชีพ" },
-        { text: "C. อ่านเกี่ยวกับประวัติศาสตร์หรือสังคม", type: "ศิลป์-สังคม" },
-        { text: "D. เล่นเกมวางแผนหรือแก้โจทย์ตัวเลข", type: "ศิลป์-คำนวณ" },
-        { text: "E. ทดลองวิทยาศาสตร์ง่าย ๆ", type: "วิทย์-คณิต" }
-        ]
-    },
-    {
-        title: "20. ถ้าต้องทำงานที่มีข้อผิดพลาดเกิดขึ้น คุณมักจะเลือกวิธีใด?",
-        options: [
-        { text: "A. กลับไปดูว่าขั้นตอนไหนทำให้เกิดข้อผิดพลาด", type: "วิทย์-คณิต" },
-        { text: "B. พูดคุยกับคนในทีมเพื่อหาสาเหตุ", type: "ศิลป์-ภาษา" },
-        { text: "C. คำนวณใหม่และตรวจสอบตัวเลข", type: "ศิลป์-คำนวณ" },
-        { text: "D. ลงมือแก้ไขและทดลองจนใช้งานได้", type: "สายอาชีพ" },
-        { text: "E. ดูว่าปัญหานั้นเกี่ยวข้องกับผู้คนหรือสถานการณ์อย่างไร", type: "ศิลป์-สังคม" }
-        ]
-    },
+      { title: "1. วันหยุดสุดสัปดาห์ คุณอยากทำอะไรมากที่สุด!?", options: [{ text: "ไปเที่ยวต่างจังหวัด / ตั้งแคมป์", type: "สายลุย ชอบธรรมชาติและการผจญภัย" }, { text: "นอนดูซีรีส์อยู่ห้องชิลๆ", type: "สายสโลว์ไลฟ์ รักความสงบ" }, { text: "ไปเดินห้าง ช้อปปิ้ง หาคาเฟ่เก๋ๆ", type: "สายแฟชั่น ชอบความทันสมัย" }] },
+      { title: "2. เวลาเจอเรื่องเครียด คุณเลือกวิธีไหนในการฮีลใจ?", options: [{ text: "กินของอร่อยๆ ที่ชอบ", type: "นักชิม ใช้ความอร่อยเยียวยา" }, { text: "ออกกำลังกาย / เล่นกีฬา", type: "สายแอคทีฟ ปลดปล่อยพลังงาน" }, { text: "คุยกับเพื่อนสนิท / ระบายให้คนอื่นฟัง", type: "สายเอ็กโทรเวิร์ต รักมิตรภาพ" }] },
+      { title: "3. อาหารมื้อเย็นที่คู่ควรกับคุณคืออะไร?", options: [{ text: "ชาบู / หมูกระทะ", type: "สายปาร์ตี้ ชอบกินจัดเต็ม" }, { text: "สลัด / อาหารคลีนเพื่อสุขภาพ", type: "สายเฮลตี้ ใส่ใจสุขภาพ" }, { text: "อาหารตามสั่งง่ายๆ รวดเร็ว", type: "สายยุทธศาสตร์ เน้นความคล่องตัว" }] },
+      { title: "4. เมื่อต้องทำงานเป็นกลุ่ม คุณมักจะรับบทบาทไหน?", options: [{ text: "ผู้นำ / คนคอยแจกจ่ายงาน", type: "สายลีดเดอร์ ชอบบริหาร" }, { text: "คนคิดไอเดีย / ออกแบบงาน", type: "สายคริเอทีฟ ความคิดสร้างสรรค์สูง" }, { text: "ฝ่ายหาข้อมูล / คอยสนับสนุนเพื่อน", type: "สายซัพพอร์ต ละเอียดรอบคอบ" }] },
+      { title: "5. เครื่องดื่มแก้วโปรดช่วงเช้าของคุณคือ?", options: [{ text: "กาแฟดำ / อเมริกาโน่", type: "สายจริงจัง พร้อมลุยงาน" }, { text: "ชาไข่มุก / นมสดหวานร้อย", type: "สายสดใส เติมความหวาน" }, { text: "น้ำผลไม้สกัด / น้ำเปล่าเย็นๆ", type: "สายรักตัวเอง เน้นความสดชื่น" }] },
+      { title: "6. ถ้าชนะรางวัลใหญ่ คุณจะเอาเงินไปทำอะไรก่อน?", options: [{ text: "ลงทุน / เก็บออมในธนาคาร", type: "สายวางแผนอนาคต มั่นคง" }, { text: "ตั๋วเครื่องบินไปเที่ยวรอบโลก", type: "สายรักอิสระ เปิดโลกทัศน์" }, { text: "ซื้อมือถือใหม่ / ของที่อยากได้", type: "สายรางวัลชีวิต ให้ความสุขปัจจุบัน" }] },
+      { title: "7. สไตล์การแต่งตัวที่คุณชอบที่สุด?", options: [{ text: "เสื้อยืด กางเกงยีนส์ สบายๆ", type: "สายมินิมอล เน้นความสะดวก" }, { text: "จัดเต็มตามเทรนด์แฟชั่นล่าสุด", type: "สายโดดเด่น มั่นใจสูง" }, { text: "ชุดทางการ / เนี๊ยบเรียบร้อย", type: "สายมืออาชีพ ดูน่าเชื่อถือ" }] },
+      { title: "8. เวลาไปเที่ยว คุณชอบพักที่ไหนมากที่สุด?", options: [{ text: "โรงแรม 5 ดาว สิ่งอำนวยความสะดวกครบ", type: "สายลักชัวรี ชอบความสบาย" }, { text: "โฮมสเตย์สัมผัสวิถีชาวบ้าน", type: "สายอินดี้ ชอบเรียนรู้ culture" }, { text: "พูลวิลล่าปาร์ตี้กับกลุ่มเพื่อน", type: "สายกิจกรรม ชอบความสนุกสนาน" }] },
+      { title: "9. แนวเพลงที่คุณเปิดฟังบ่อยที่สุด?", options: [{ text: "Pop / K-Pop ฟังง่าย จังหวะสนุก", type: "สายสดใส ทันกระแส" }, { text: "Lo-fi / Acoustic ฟังสบาย", type: "สายมีสมาธิ ชอบความสงบ" }, { text: "Rock / Hip-Hop จังหวะหนักแน่น", type: "สายพลังเยอะ มีแพสชัน" }] },
+      { title: "10. เวลาต้องตัดสินใจเรื่องสำคัญ คุณใช้อะไรนำทาง?", options: [{ text: "เหตุผล ข้อมูล และสถิติ", type: "สายตรรกะ คิดเป็นระบบ" }, { text: "ความรู้สึกแรก / สัญชาตญาณ", type: "สายอาร์ต เชื่อในความรู้สึก" }, { text: "ปรึกษาและฟังความเห็นจากคนรอบข้าง", type: "สายประตินิยม ใส่ใจผู้อื่น" }] },
+      { title: "11. โซเชียลมีเดียที่คุณเล่นบ่อยที่สุดคือ?", options: [{ text: "TikTok / Reels (คลิปสั้น)", type: "สายบันเทิง ชอบความรวดเร็ว" }, { text: "Instagram (คุมโทนรูปสวยๆ)", type: "สายสร้างสรรค์ ชอบเสพศิลปะ" }, { text: "X (Twitter) / Facebook", type: "สายทันโลก ติดตามข่าวสาร" }] },
+      { title: "12. สัตว์เลี้ยงประเภทไหนที่เป็นตัวแทนของคุณ?", options: [{ text: "สุนัข (ซื่อสัตย์ ร่าเริง)", type: "สายเฟรนด์ลี่ เป็นมิตร" }, { text: "แมว (เป็นตัวของตัวเอง อินดี้)", type: "สายลึกลับ รักอิสระ" }, { text: "คาปิบาร่า (สโลว์ไลฟ์)", type: "สายชิลขั้นสุด" }] },
+      { title: "13. คุณคิดอย่างไรกับการนัดหมาย?", options: [{ text: "ไปถึงก่อนเวลาเสมอ 10-15 นาที", type: "สายตรงต่อเวลา รับผิดชอบสูง" }, { text: "ไปถึงตรงเวลาเป๊ะพอดี", type: "สายจัดการเวลาดีเยี่ยม" }, { text: "สายเลทนิดหน่อย 5-10 นาที", type: "สายยืดหยุ่น" }] },
+      { title: "14. วิธีจัดการกับของเสีย/ของไม่ได้ใช้ในบ้าน?", options: [{ text: "ตัดใจทิ้งทันที / บริจาคให้หมด", type: "สายเด็ดขาด ชอบความสะอาด" }, { text: "เก็บไว้ก่อน เผื่อได้ใช้ในอนาคต", type: "สายช่างเสียดาย คุ้มค่า" }, { text: "เอามา DIY ดัดแปลงเป็นของใหม่", type: "สายช่างคิด ชอบประดิษฐ์" }] },
+      { title: "15. สภาพอากาศแบบไหนที่คุณชอบที่สุด?", options: [{ text: "อากาศหนาว มีหมอก เย็นสบาย", type: "สายโรแมนติก ชอบความอบอุ่น" }, { text: "แดดจัด ฟ้าใส สดใส", type: "สายแอคทีฟ ชอบกิจกรรม" }, { text: "ฝนตกพรำๆ นั่งฟังเสียงฝน", type: "สายลึกซึ้ง ชอบจินตนาการ" }] },
+      { title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?", options: [{ text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์", type: "สายเป้าหมายชัดเจน" }, { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายชอบความประหลาดใจ" }, { text: "เปรียบเทียบราคา ป้ายลดราคา", type: "สายฉลาดใช้เงิน" }] },
+      { title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?", options: [{ text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา เข้าใจผู้อื่น" }, { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว" }, { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน สมบูรณ์แบบ" }] },
+      { title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?", options: [{ text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสัน" }, { text: "มุมเงียบๆ คุยกับเพื่อนสนิท 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ" }, { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขการกิน" }] },
+      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปปรับตัวเก่ง" }] },
+      { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
-      function submitPlayerName() {
-        const nameInput = document.getElementById('playerNameInput');
-        if (!nameInput || !nameInput.value.trim()) {
-          alert("กรุณากรอกชื่อก่อนเข้าเล่นครับ!");
-          return;
-        }
-
-        // บันทึกชื่อผู้เล่น
-        playerName = nameInput.value.trim();
-        const displayName = document.getElementById('playerDisplayName');
-        if (displayName) displayName.innerText = playerName;
-
-        // ซ่อน Modal หน้ากรอกชื่อ และ Modal Countdown
-        const nameModal = document.getElementById('nameInputModal');
-        if (nameModal) nameModal.style.display = 'none';
-
-        const countdownModal = document.getElementById('startCountdownModal');
-        if (countdownModal) countdownModal.style.display = 'none';
-
-        // สั่งให้เกมและคำถามเริ่มทันทีโดยไม่ต้องรอ Host
-        if (typeof initZombies === 'function') initZombies();
-        if (typeof gameLoop === 'function') gameLoop();
-        if (typeof startNewQuestion === 'function') startNewQuestion();
-      }
 
     const zombieImages = [new Image(), new Image(), new Image(), new Image()];
     zombieImages.forEach((img, i) => {
@@ -744,12 +519,11 @@
       speed: Math.random() * 0.02 + 0.005
     }));
 
-    // กำหนดขนาดตัวละครให้เท่ากันทุกตัว (ความกว้าง 80px, ความสูง 95px)
     const zombieSpecs = [
-      { imgIndex: 0, w: 60, h: 75, speed: 5.5 },
-      { imgIndex: 1, w: 80, h: 95, speed: 5.5 },
-      { imgIndex: 2, w: 80, h: 95, speed: 5.5 },
-      { imgIndex: 3, w: 60, h: 75, speed: 5.5 }
+      { imgIndex: 0, w: 75, h: 95,  speed: 5.5 },
+      { imgIndex: 1, w: 60, h: 75,  speed: 5.5 },
+      { imgIndex: 2, w: 105, h: 120, speed: 5.5 },
+      { imgIndex: 3, w: 80, h: 105, speed: 5.5 }
     ];
 
     function getRandomZombie(laneY, extraDelay = 0) {
@@ -969,7 +743,7 @@
 
       const speed = 20;
 
-      if (cannonBalls.length > 5) cannonBalls.shift();
+      if (cannonBalls.length > 10) cannonBalls.shift();
 
       cannonBalls.push({
         x: startX, y: startY,
@@ -1070,7 +844,7 @@
 
       document.getElementById('resultModal').style.display = 'flex';
 
-      let timeLeft = 5;
+      let timeLeft = 10;
       const timerEl = document.getElementById('timerText');
 
       const countdown = setInterval(() => {
@@ -1082,52 +856,35 @@
         }
       }, 1000);
     }
-    function showRanking(userTopType) {
-      const resultModal = document.getElementById('resultModal');
-      if (resultModal) resultModal.style.display = 'none';
 
-      const rankingModal = document.getElementById('rankingModal');
-      if (rankingModal) rankingModal.style.display = 'flex';
+    function showFinalResult() {
+      document.getElementById('timerText').style.display = 'none';
 
-      // ดึงข้อมูลจริงจาก localStorage
-      const realStats = JSON.parse(localStorage.getItem('quizStats')) || {};
+      const counts = {};
+      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
 
-      // คำนวณยอดรวมนักเรียนทั้งหมดที่เคยเล่น
-      const totalStudents = Object.values(realStats).reduce((a, b) => a + b, 0);
-      const totalText = document.getElementById('totalStudentsText');
-      if (totalText) totalText.innerText = totalStudents;
+      let topType = "";
+      let maxCount = 0;
+      for (let t in counts) {
+        if (counts[t] > maxCount) {
+          maxCount = counts[t];
+          topType = t;
+        }
+      }
 
-      // ดึงกล่องแสดงผล rankingContainer
-      const container = document.getElementById('rankingContainer');
-      if (!container) return;
-      container.innerHTML = '';
+      const resultBox = document.getElementById('result-box');
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 ไลฟ์สไตล์ที่เหมาะสมกับคุณคือ: ${topType}</h3>
+        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
+        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
+        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
 
-      // รายชื่อสายเรียนทั้งหมด
-      const allTypes = ["สายวิทย์-คณิต", "สายอาชีพ", "สายศิลป์", "สายภาษา"];
-
-      allTypes.forEach((type) => {
-        const count = realStats[type] || 0;
-        const percentage = totalStudents > 0 ? ((count / totalStudents) * 100).toFixed(0) : 0;
-        const isUserType = (type === userTopType);
-
-        const item = document.createElement('div');
-        item.style.cssText = "background: #2a2a2a; margin-bottom: 8px; padding: 10px; border-radius: 8px;";
-        
-        item.innerHTML = `
-          <div style="display: flex; justify-content: space-between; color: white; font-weight: bold; margin-bottom: 5px;">
-            <span>${type} ${isUserType ? '⭐ (ของคุณ)' : ''}</span>
-            <span style="color: #00ff88;">${percentage}% (${count} คน)</span>
-          </div>
-          <div style="background: #444; height: 8px; border-radius: 4px; overflow: hidden;">
-            <div style="background: #00ff88; width: ${percentage}%; height: 100%;"></div>
-          </div>
-        `;
-        container.appendChild(item);
-      });
-    }
-      let stats = JSON.parse(localStorage.getItem('quizStats')) || {};
-      stats[topType] = (stats[topType] || 0) + 1;
-      localStorage.setItem('quizStats', JSON.stringify(stats));
+        <!-- ปุ่ม NEXT -->
+        <div style="text-align: center;">
+          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
+        </div>
+      `;
 
       if (socket) {
         socket.emit('submitAnswer', { 
@@ -1136,68 +893,48 @@
           optionText: topType 
         });
       }
+    }
 
     // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
-      function showRankingPage() {
-        document.getElementById('resultModal').style.display = 'none';
-        document.getElementById('rankingModal').style.display = 'flex';
+    function showRankingPage() {
+      document.getElementById('resultModal').style.display = 'none';
 
-        // ดึงข้อมูลจริงจาก localStorage
-        const stats = JSON.parse(localStorage.getItem('quizStats')) || {};
-        const totalStudents = Object.values(stats).reduce((a, b) => a + b, 0);
+      const mockData = [
+        { name: "🔬 สายวิทย์-คณิต", count: 45, color: "#ff4757" },
+        { name: "🛠️ สายอาชีพ", count: 32, color: "#ffa502" },
+        { name: "🎨 สายศิลป์", count: 28, color: "#2ed573" },
+        { name: "🗣️ สายภาษา", count: 19, color: "#1e90ff" }
+      ];
 
-        const totalText = document.getElementById('totalStudentsText');
-        if (totalText) totalText.innerText = totalStudents;
+      const total = mockData.reduce((acc, cur) => acc + cur.count, 0);
 
-        const container = document.getElementById('rankingContainer');
-        if (!container) return;
-        container.innerHTML = '';
+      const container = document.getElementById('rankingContainer');
+      container.innerHTML = '';
 
-        const allTypes = ["สายวิทย์-คณิต", "สายอาชีพ", "สายศิลป์", "สายภาษา"];
-        const colors = {
-          "สายวิทย์-คณิต": "#ff4444",
-          "สายอาชีพ": "#ffa502",
-          "สายศิลป์": "#2ed573",
-          "สายภาษา": "#1e90ff"
-        };
-
-        allTypes.forEach((type) => {
-          const count = stats[type] || 0;
-          const percentage = totalStudents > 0 ? ((count / totalStudents) * 100).toFixed(0) : 0;
-          const barColor = colors[type] || "#00ff88";
-
-          const item = document.createElement('div');
-          item.style.cssText = "background: #2a2a2a; margin-bottom: 8px; padding: 10px; border-radius: 8px;";
-          
-          item.innerHTML = `
-            <div style="display: flex; justify-content: space-between; color: white; font-weight: bold; margin-bottom: 5px;">
-              <span>${type}</span>
-              <span style="color: ${barColor};">${percentage}% (${count} คน)</span>
+      mockData.forEach(item => {
+        const percent = Math.round((item.count / total) * 100);
+        const div = document.createElement('div');
+        div.className = 'ranking-item';
+        div.style.borderLeftColor = item.color;
+        div.innerHTML = `
+          <div style="width: 100%;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem;">
+              <span>${item.name}</span>
+              <span style="color:${item.color}">${percent}%</span>
             </div>
-            <div style="background: #444; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="background: ${barColor}; width: ${percentage}%; height: 100%;"></div>
+            <div class="ranking-bar-bg">
+              <div class="ranking-bar-fill" style="width: ${percent}%; background: ${item.color};"></div>
             </div>
-          `;
-          container.appendChild(item);
-        });
-      }
+          </div>
+        `;
+        container.appendChild(div);
+      });
 
-      // 2. ฟังก์ชันสั่งล้างสถิติสำหรับแอดมิน
-      function resetStatsByAdmin() {
-        const confirmReset = confirm("⚠️ ยืนยันการล้างข้อมูลสถิติทั้งหมดหรือไม่?\nข้อมูลสถิติการตอบของผู้เล่นทั้งหมดจะถูกรีเซ็ตเป็น 0");
-        
-        if (confirmReset) {
-          // ลบข้อมูลสถิติที่บันทึกใน LocalStorage
-          localStorage.removeItem('quizStats');
-          
-          alert("✅ ล้างข้อมูลสถิติเรียบร้อยแล้ว!");
-          
-          // โหลดหน้าเว็บใหม่เพื่ออัปเดตหน้าจอ
-          location.reload();
-        }
-      }
+      document.getElementById('rankingModal').style.display = 'flex';
+    }
+
     resizeCanvas();
-    initZombies();                    
+    initZombies();
     gameLoop();
   </script>
 </body>
