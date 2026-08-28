@@ -276,7 +276,6 @@
       line-height: 1.4;
     }
 
-    /* สไตล์เพิ่มเติมปุ่ม NEXT และหน้า Ranking */
     .btn-next {
       margin-top: 18px;
       padding: 12px 30px;
@@ -373,10 +372,11 @@
       </div>
     </div>
 
+    <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
     <div id="rankingModal" class="modal">
       <div class="modal-content">
         <h2>📊 สถิติการเลือกสายเรียน</h2>
-        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปผลอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
+        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปสัดส่วนอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
         
         <div id="rankingContainer" class="ranking-list"></div>
 
@@ -495,7 +495,7 @@
       { title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?", options: [{ text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์", type: "สายเป้าหมายชัดเจน" }, { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายชอบความประหลาดใจ" }, { text: "เปรียบเทียบราคา ป้ายลดราคา", type: "สายฉลาดใช้เงิน" }] },
       { title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?", options: [{ text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา เข้าใจผู้อื่น" }, { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว" }, { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน สมบูรณ์แบบ" }] },
       { title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?", options: [{ text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสัน" }, { text: "มุมเงียบๆ คุยกับเพื่อนสนิท 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ" }, { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขการกิน" }] },
-      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปรับตัวเก่ง" }] },
+      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปปรับตัวเก่ง" }] },
       { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
 
@@ -844,7 +844,7 @@
 
       document.getElementById('resultModal').style.display = 'flex';
 
-      let timeLeft = 10;
+      let timeLeft = 5;
       const timerEl = document.getElementById('timerText');
 
       const countdown = setInterval(() => {
@@ -880,6 +880,7 @@
         <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
         <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
 
+        <!-- ปุ่ม NEXT -->
         <div style="text-align: center;">
           <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
         </div>
@@ -894,11 +895,10 @@
       }
     }
 
-    // ฟังก์ชันสำหรับสลับไปหน้าจัดอันดับสถิติสายเรียน
+    // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
     function showRankingPage() {
       document.getElementById('resultModal').style.display = 'none';
 
-      // จำลองข้อมูลสถิติ
       const mockData = [
         { name: "🔬 สายวิทย์-คณิต", count: 45, color: "#ff4757" },
         { name: "🛠️ สายอาชีพ", count: 32, color: "#ffa502" },
@@ -918,9 +918,9 @@
         div.style.borderLeftColor = item.color;
         div.innerHTML = `
           <div style="width: 100%;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95rem;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem;">
               <span>${item.name}</span>
-              <span style="color:${item.color}">${percent}% (${item.count} คน)</span>
+              <span style="color:${item.color}">${percent}%</span>
             </div>
             <div class="ranking-bar-bg">
               <div class="ranking-bar-fill" style="width: ${percent}%; background: ${item.color};"></div>
