@@ -372,21 +372,24 @@
       </div>
     </div>
 
-    <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
-    <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
-    <div id="rankingModal" class="modal">
-      <div class="modal-content">
-        <h2>📊 สถิติการเลือกสายเรียน</h2>
-        <div class="total-students-badge">👨‍🎓 นักเรียนที่มาตอบทั้งหมด: <span id="totalStudentsText">0</span> คน</div>
-        
-        <div id="rankingContainer" class="ranking-list"></div>
+    <!-- Modal แสดงสถิติการจัดอันดับ -->
+    <div id="rankingModal" class="modal" style="display: none;">
+      <div class="modal-content" style="background: #1a1a1a; color: white; padding: 25px; border-radius: 15px; border: 2px solid #ff4444; max-width: 450px; margin: auto;">
+        <h2 style="text-align: center; margin-bottom: 5px;">📊 สถิติการเลือกสายเรียน</h2>
+        <p style="text-align: center; color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+          👨‍🎓 นักเรียนที่มาตอบทั้งหมด: <span id="totalStudentsText" style="color: #00ff88; font-weight: bold;">0</span> คน
+        </p>
 
-        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
-          <button class="btn-next" onclick="location.reload()">🔄 เล่นใหม่อีกครั้ง</button>
-          
-          <!-- ปุ่มของแอดมิน ซ่อนไว้เป็นค่าเริ่มต้นด้วย display: none; -->
-          <button id="btnAdminReset" class="btn-next" onclick="resetStatsByAdmin()" style="display: none; background: #ff4444; color: white; box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);">
-            🗑️ ล้างสถิติ (สำหรับแอดมิน)
+        <!-- ส่วนที่จะให้ JavaScript เติมข้อมูลจริงเข้าไป -->
+        <div id="rankingContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn-next" onclick="location.reload()" style="padding: 10px 20px; border-radius: 20px; background: #00ff88; border: none; font-weight: bold; cursor: pointer;">
+            🔄 เล่นใหม่อีกครั้ง
+          </button>
+
+          <button id="btnAdminReset" class="btn-next" onclick="resetStatsByAdmin()" style="display: none; padding: 10px 20px; border-radius: 20px; background: #ff4444; color: white; border: none; font-weight: bold; cursor: pointer;">
+            🗑️ ล้างสถิติ (แอดมิน)
           </button>
         </div>
       </div>
@@ -1044,35 +1047,74 @@
         }
       }, 1000);
     }
+    function showRanking(userTopType) {
+      // 1. ซ่อน Modal ผลลัพธ์เดิม และเปิด Ranking Modal
+      const resultModal = document.getElementById('resultModal');
+      if (resultModal) resultModal.style.display = 'none';
 
-    function showFinalResult() {
-      document.getElementById('timerText').style.display = 'none';
+      const rankingModal = document.getElementById('rankingModal');
+      rankingModal.style.display = 'flex';
 
-      const counts = {};
-      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+      // 2. ดึงข้อมูลสถิติเดิมจาก LocalStorage
+      let stats = JSON.parse(localStorage.getItem('quizStats')) || {
+        "สายวิทย์-คณิต": 0,
+        "สายอาชีพ": 0,
+        "สายศิลป์": 0,
+        "สายภาษา": 0
+      };
 
-      let topType = "";
-      let maxCount = 0;
-      for (let t in counts) {
-        if (counts[t] > maxCount) {
-          maxCount = counts[t];
-          topType = t;
-        }
+      // 3. บันทึกผลลัพธ์รอบนี้เพิ่มเข้าไปในสถิติ
+      if (userTopType) {
+        stats[userTopType] = (stats[userTopType] || 0) + 1;
+        localStorage.setItem('quizStats', JSON.stringify(stats));
       }
 
-      const resultBox = document.getElementById('result-box');
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 แผนการเรียนเหมาะสมกับคุณคือ: ${topType}</h3>
-        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
-        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
-        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+      // 4. คำนวณจำนวนผู้เล่นทั้งหมด
+      const totalStudents = Object.values(stats).reduce((a, b) => a + b, 0);
+      document.getElementById('totalStudentsText').innerText = totalStudents;
 
-        <!-- ปุ่ม NEXT -->
-        <div style="text-align: center;">
-          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
-        </div>
-      `;
+      // 5. เรียงลำดับสายเรียนตามจำนวนคนเลือกมากไปน้อย
+      const sortedStats = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
+
+      // 6. วาดรายการและเปอร์เซ็นต์จริงลงใน rankingContainer
+      const container = document.getElementById('rankingContainer');
+      container.innerHTML = '';
+
+      const colors = {
+        "สายวิทย์-คณิต": "#ff4444",
+        "สายอาชีพ": "#ffbb00",
+        "สายศิลป์": "#00ff88",
+        "สายภาษา": "#0088ff"
+      };
+
+      sortedStats.forEach((type) => {
+        const count = stats[type];
+        const percentage = totalStudents > 0 ? ((count / totalStudents) * 100).toFixed(0) : 0;
+        const isUserType = type === userTopType;
+        const barColor = colors[type] || "#00ff88";
+
+        const item = document.createElement('div');
+        item.style.cssText = `
+          background: #2a2a2a;
+          padding: 10px 15px;
+          border-radius: 8px;
+          border-left: 5px solid ${barColor};
+          ${isUserType ? 'border: 2px solid #ffffff;' : ''}
+        `;
+
+        item.innerHTML = `
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; font-size: 0.95rem;">
+            <span>${type} ${isUserType ? '⭐ (ของคุณ)' : ''}</span>
+            <span style="color: ${barColor};">${percentage}% (${count} คน)</span>
+          </div>
+          <div style="background: #444; height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="background: ${barColor}; width: ${percentage}%; height: 100%; transition: width 0.5s ease;"></div>
+          </div>
+        `;
+
+        container.appendChild(item);
+      });
+    }
 
       if (socket) {
         socket.emit('submitAnswer', { 
