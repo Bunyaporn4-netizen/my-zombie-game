@@ -18,34 +18,40 @@
     html, body {
       width: 100%;
       height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
       overflow: hidden;
+      overscroll-behavior: none;
       background-color: #000000;
       font-family: 'Kanit', sans-serif;
       color: #ffffff;
     }
     
-    /* คอนเทนเนอร์หลักเต็มจอ 100% */
     #gameContainer {
-      position: relative;
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
+      height: -webkit-fill-available;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
       background-color: #121212;
+      touch-action: none;
     }
     
-    /* Canvas ขยายเต็มพื้นที่ส่วนกลางที่เหลือ */
     #gameCanvas {
       flex: 1;
       width: 100%;
       height: 100%;
       display: block;
       background-color: #1e1e1e;
+      touch-action: none;
     }
 
-    /* แถบด้านบน (Top Banner) ชิดขอบบนสุด */
     #topBanner {
       position: relative;
       z-index: 10;
@@ -78,7 +84,6 @@
       border: 1px solid #00ff88;
     }
 
-    /* แถบด้านล่าง (Bottom Banner) ชิดขอบล่างสุด */
     #bottomBanner {
       position: relative;
       z-index: 10;
@@ -103,7 +108,6 @@
       box-shadow: 0 0 12px rgba(255, 187, 0, 0.3);
     }
 
-    /* Modal หน้าแรกสุด: กรอกชื่อ */
     #nameInputModal {
       display: flex;
       position: absolute;
@@ -150,7 +154,6 @@
       border-color: #00ff88;
     }
 
-    /* Modal สตาร์ทเกม */
     #startCountdownModal {
       display: none;
       position: absolute;
@@ -317,6 +320,11 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // ป้องกัน Touch Scrolling ของบราวเซอร์ทั้งหมด
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+
     const socket = typeof io !== 'undefined' ? io() : null;
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -324,7 +332,6 @@
     let W = 800;
     let H = 600;
 
-    // ระบบปรับขนาด Canvas ให้รองรับทุกหน้าจอ
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;
@@ -338,7 +345,6 @@
     let playerName = "";
     let score = 0;
 
-    // ระบบเสียง
     const audioElements = {
       ready: new Audio('audio/ready.mp3'),
       start: new Audio('audio/start.mp3'),
@@ -347,9 +353,9 @@
     };
 
     audioElements.start.loop = true;
-    audioElements.start.volume = 0.3;
+    audioElements.start.volume = 0.8;
     audioElements.quiz.loop = true;
-    audioElements.quiz.volume = 0.5;
+    audioElements.quiz.volume = 0.8;
 
     function playSound(key) {
       const audio = audioElements[key];
@@ -620,7 +626,6 @@
 
     function handlePointer(e) {
       if (!gameStarted || isQuizActive) return;
-      e.preventDefault();
 
       playSound('shoot');
 
@@ -655,7 +660,6 @@
     }
 
     canvas.addEventListener('pointerdown', handlePointer);
-    canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
 
     function gameLoop() {
       ctx.clearRect(0, 0, W, H);
@@ -791,7 +795,6 @@
       }
     }
 
-    // เริ่มต้นระบบปรับขนาด Canvas และเริ่มเกม Loop
     resizeCanvas();
     initZombies();
     gameLoop();
