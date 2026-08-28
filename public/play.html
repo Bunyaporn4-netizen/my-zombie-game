@@ -7,113 +7,51 @@
   <style>
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #121212;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #121212; color: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; font-family: sans-serif;
       overflow: hidden;
     }
-    #gameContainer {
-      position: relative;
-      width: 800px;
-      height: 600px;
-    }
-    canvas {
-      border: 3px solid #ff4444;
-      background-color: #1e1e1e;
-      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
-      border-radius: 8px;
-    }
+    #gameContainer { position: relative; width: 800px; height: 600px; }
+    canvas { border: 3px solid #ff4444; background-color: #1e1e1e; border-radius: 8px; }
     #hud {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: rgba(0,0,0,0.7);
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #00ff88;
-      border: 1px solid #00ff88;
-      pointer-events: none;
+      position: absolute; top: 15px; left: 15px;
+      background: rgba(0,0,0,0.7); padding: 10px 20px;
+      border-radius: 20px; font-size: 18px; font-weight: bold; color: #00ff88;
+      border: 1px solid #00ff88; pointer-events: none;
     }
-    /* Pop-up Quiz Modal */
     .modal {
-      display: none;
-      position: absolute;
+      display: none; position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(5px);
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+      justify-content: center; align-items: center; z-index: 10;
     }
     .modal-content {
-      background: #252525;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      border: 2px solid #ff4444;
-      box-shadow: 0 0 25px rgba(255, 68, 68, 0.5);
-      text-align: center;
+      background: #252525; padding: 30px; border-radius: 12px;
+      max-width: 600px; width: 90%; border: 2px solid #ff4444; text-align: center;
     }
-    .modal-content h2 {
-      color: #ff4444;
-      margin-top: 0;
-      font-size: 22px;
-    }
+    .modal-content h2 { color: #ff4444; margin-top: 0; }
     .option-btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      background: #333;
-      color: #fff;
-      border: 2px solid #555;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.2s;
-      text-align: left;
+      display: block; width: 100%; padding: 14px; margin: 10px 0;
+      background: #333; color: #fff; border: 2px solid #555;
+      border-radius: 8px; cursor: pointer; font-size: 16px; text-align: left;
     }
-    .option-btn:hover {
-      background: #ff4444;
-      border-color: #ff6666;
-      transform: translateY(-2px);
-    }
-    /* Final Result Screen */
-    #timerText {
-      font-size: 48px;
-      color: #ffbb00;
-      margin: 20px 0;
-    }
+    .option-btn:hover { background: #ff4444; border-color: #ff6666; }
+    #timerText { font-size: 48px; color: #ffbb00; margin: 20px 0; }
     #resultBox {
-      display: none;
-      font-size: 20px;
-      color: #00ff88;
-      line-height: 1.6;
-      background: rgba(0, 255, 136, 0.1);
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #00ff88;
+      display: none; font-size: 20px; color: #00ff88;
+      background: rgba(0, 255, 136, 0.1); padding: 20px;
+      border-radius: 8px; border: 1px solid #00ff88;
     }
-  </script>
+  </style>
 </head>
 <body>
-
   <div id="gameContainer">
     <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <!-- Quiz Modal -->
     <div id="quizModal" class="modal">
       <div class="modal-content">
         <h2 id="quizTitle">คำถาม...</h2>
@@ -121,7 +59,6 @@
       </div>
     </div>
 
-    <!-- Final Result Modal -->
     <div id="resultModal" class="modal">
       <div class="modal-content">
         <h2>🎉 กำลังประมวลผลผลลัพธ์...</h2>
@@ -138,185 +75,40 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // คำถาม 20 ข้อ พร้อมคำอธิบายตัวตนปลายทาง
     const questions = [
-      {
-        title: "1. วันหยุดสุดสัปดาห์ คุณอยากทำอะไรมากที่สุด?",
-        options: [
-          { text: "ไปเที่ยวต่างจังหวัด / ตั้งแคมป์", type: "สายลุย ชอบธรรมชาติและการผจญภัย" },
-          { text: "นอนดูซีรีส์อยู่ห้องชิลๆ", type: "สายสโลว์ไลฟ์ รักความสงบและพื้นที่ส่วนตัว" },
-          { text: "ไปเดินห้าง ช้อปปิ้ง หาคาเฟ่เก๋ๆ", type: "สายแฟชั่น ชอบความทันสมัยและสังคม" }
-        ]
-      },
-      {
-        title: "2. เวลาเจอเรื่องเครียด คุณเลือกวิธีไหนในการฮีลใจ?",
-        options: [
-          { text: "กินของอร่อยๆ ที่ชอบ", type: "นักชิม ใช้ความอร่อยเยียวยาทุกสิ่ง" },
-          { text: "ออกกำลังกาย / เล่นกีฬา", type: "สายแอคทีฟ ปลดปล่อยพลังงาน" },
-          { text: "คุยกับเพื่อนสนิท / ระบายให้คนอื่นฟัง", type: "สายเอ็กโทรเวิร์ต ให้ความสำคัญกับมิตรภาพ" }
-        ]
-      },
-      {
-        title: "3. อาหารมื้อเย็นที่คู่ควรกับคุณคืออะไร?",
-        options: [
-          { text: "ชาบู / หมูกระทะ", type: "สายปาร์ตี้ ชอบความอบอุ่นและการกินจัดเต็ม" },
-          { text: "สลัด / อาหารคลีนเพื่อสุขภาพ", type: "สายเฮลตี้ ใส่ใจสุขภาพและรูปร่าง" },
-          { text: "อาหารตามสั่งง่ายๆ รวดเร็ว", type: "สายยุทธศาสตร์ เน้นความคล่องตัวประหยัดเวลา" }
-        ]
-      },
-      {
-        title: "4. เมื่อต้องทำงานเป็นกลุ่ม คุณมักจะรับบทบาทไหน?",
-        options: [
-          { text: "ผู้นำ / คนคอยแจกจ่ายงาน", type: "สายลีดเดอร์ มีทักษะการบริหารและตัดสินใจ" },
-          { text: "คนคิดไอเดีย / ออกแบบงาน presentation", type: "สายคริเอทีฟ มีความคิดสร้างสรรค์สูง" },
-          { text: "ฝ่ายหาข้อมูล / คอยสนับสนุนเพื่อน", type: "สายซัพพอร์ต ละเอียดรอบคอบ พึ่งพาได้" }
-        ]
-      },
-      {
-        title: "5. เครื่องดื่มแก้วโปรดช่วงเช้าของคุณคือ?",
-        options: [
-          { text: "กาแฟดำ / อเมริกาโน่", type: "สายจริงจัง พร้อมลุยงานด้วยความฟิต" },
-          { text: "ชาไข่มุก / นมสดหวานร้อย", type: "สายสดใส เติมความหวาน ร่าเริง อารมณ์ดี" },
-          { text: "น้ำผลไม้สกัด / น้ำเปล่าเย็นๆ", type: "สายรักตัวเอง เน้นความสดชื่นบริสุทธิ์" }
-        ]
-      },
-      {
-        title: "6. ถ้าชนะรางวัลใหญ่ คุณจะเอาเงินไปทำอะไรก่อน?",
-        options: [
-          { text: "ลงทุน / เก็บออมในธนาคาร", type: "สายวางแผนอนาคต มั่นคงและสุขุม" },
-          { text: "ตั๋วเครื่องบินไปเที่ยวรอบโลก", type: "สายรักอิสระ อยากเปิดโลกทัศน์ใหม่ๆ" },
-          { text: "ซื้อมือถือใหม่ / ของที่อยากได้มานาน", type: "สายรางวัลชีวิต ให้ความสุขกับปัจจุบัน" }
-        ]
-      },
-      {
-        title: "7. สไตล์การแต่งตัวที่คุณชอบที่สุด?",
-        options: [
-          { text: "เสื้อยืด กางเกงยีนส์ สบายๆ", type: "สายมินิมอล เน้นความสะดวกคล่องตัว" },
-          { text: "จัดเต็มตามเทรนด์แฟชั่นล่าสุด", type: "สายโดดเด่น มั่นใจในตัวเองสูง" },
-          { text: "ชุดทางการ / เนี๊ยบเรียบร้อย", type: "สายมืออาชีพ ดูน่าเชื่อถือและมีระเบียบ" }
-        ]
-      },
-      {
-        title: "8. เวลาไปเที่ยว คุณชอบพักที่ไหนมากที่สุด?",
-        options: [
-          { text: "โรงแรม 5 ดาว สิ่งอำนวยความสะดวกครบ", type: "สายลักชัวรี ชอบความสบายไร้กังวล" },
-          { text: "โฮมสเตย์สัมผัสวิถีชาวบ้าน", type: "สายอินดี้ ชอบเรียนรู้ culture และธรรมชาติ" },
-          { text: "พูลวิลล่าปาร์ตี้กับกลุ่มเพื่อน", type: "สายกิจกรรม ชอบความสนุกสนานเฮฮา" }
-        ]
-      },
-      {
-        title: "9. แนวเพลงที่คุณเปิดฟังบ่อยที่สุด?",
-        options: [
-          { text: "Pop / K-Pop ฟังง่าย จังหวะสนุก", type: "สายสดใส ทันกระแส อินเทรนด์" },
-          { text: "Lo-fi / Acoustic ฟังสบายฟังตอนทำงาน", type: "สายมีสมาธิ ชอบความสงบ นุ่มนวล" },
-          { text: "Rock / Hip-Hop จังหวะหนักแน่น", type: "สายพลังเยอะ มีแพสชันและมั่นใจ" }
-        ]
-      },
-      {
-        title: "10. เวลาต้องตัดสินใจเรื่องสำคัญ คุณใช้อะไรนำทาง?",
-        options: [
-          { text: "เหตุผล ข้อมูล และสถิติ", type: "สายตรรกะ คิดวิเคราะห์อย่างเป็นระบบ" },
-          { text: "ความรู้สึกแรก / สัญชาตญาณ", type: "สายอาร์ต เชื่อมั่นในความรู้สึกและหัวใจ" },
-          { text: "ปรึกษาและฟังความเห็นจากคนรอบข้าง", type: "สายประตินิยม ใส่ใจความรู้สึกของผู้คน" }
-        ]
-      },
-      {
-        title: "11. โซเชียลมีเดียที่คุณเล่นบ่อยที่สุดคือ?",
-        options: [
-          { text: "TikTok / Reels (คลิปสั้น)", type: "สายบันเทิง ชอบความรวดเร็วและกระแสใหม่ๆ" },
-          { text: "Instagram (คุมโทนรูปสวยๆ)", type: "สายสร้างสรรค์ ชอบเสพศิลปะและไลฟ์สไตล์" },
-          { text: "X (Twitter) / Facebook (อัปเดตข่าวสาร)", type: "สายทันโลก ชอบติดตามประเด็นและข่าวสาร" }
-        ]
-      },
-      {
-        title: "12. สัตว์เลี้ยงประเภทไหนที่เป็นตัวแทนของคุณ?",
-        options: [
-          { text: "สุนัข (ซื่อสัตย์ ร่าเริง ชอบเข้าสังคม)", type: "สายเฟรนด์ลี่ เป็นมิตรและจริงใจ" },
-          { text: "แมว (เป็นตัวของตัวเอง อินดี้ นิ่งๆ)", type: "สายลึกลับ มีเสน่ห์และรักอิสระ" },
-          { text: "คาปิบาร่า (สโลว์ไลฟ์ ไม่ยุ่งกับใคร)", type: "สายชิลขั้นสุด ไม่ชอบความวุ่นวาย" }
-        ]
-      },
-      {
-        title: "13. คุณคิดอย่างไรกับการนัดหมาย?",
-        options: [
-          { text: "ไปถึงก่อนเวลาเสมอ 10-15 นาที", type: "สายตรงต่อเวลา มีความรับผิดชอบสูง" },
-          { text: "ไปถึงตรงเวลาเป๊ะพอดี", type: "สายจัดการเวลาดีเยี่ยม ไร้ความผิดพลาด" },
-          { text: "สายเลทนิดหน่อย 5-10 นาทีเป็นเรื่องปกติ", type: "สายยืดหยุ่น ไม่ยึดติดกฎเกณฑ์เกินไป" }
-        ]
-      },
-      {
-        title: "14. วิธีจัดการกับของเสีย/ของไม่ได้ใช้ในบ้าน?",
-        options: [
-          { text: "ตัดใจทิ้งทันที / บริจาคให้หมด", type: "สายเด็ดขาด ชอบความสะอาดเป็นระเบียบ" },
-          { text: "เก็บไว้ก่อน เผื่อได้ใช้ในอนาคต", type: "สายช่างเสียดาย คุ้มค่าและมองการณ์ไกล" },
-          { text: "เอามา DIY ดัดแปลงเป็นของใหม่", type: "สายช่างคิด ชอบประดิษฐ์ประดอย" }
-        ]
-      },
-      {
-        title: "15. สภาพอากาศแบบไหนที่คุณชอบที่สุด?",
-        options: [
-          { text: "อากาศหนาว มีหมอก เย็นสบาย", type: "สายโรแมนติก ชอบความอบอุ่นและการพักผ่อน" },
-          { text: "แดดจัด ฟ้าใส สดใส", type: "สายแอคทีฟ พร้อมทำกิจกรรมกลางแจ้ง" },
-          { text: "ฝนตกพรำๆ นั่งฟังเสียงฝน", type: "สายลึกซึ้ง ชอบใช้ความคิดและจินตนาการ" }
-        ]
-      },
-      {
-        title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?",
-        options: [
-          { text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์เป๊ะๆ", type: "สายเป้าหมายชัดเจน ไม่แวะนอกทาง" },
-          { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายเรขาคณิต ชอบความประหลาดใจ" },
-          { text: "เปรียบเทียบราคา ป้ายลดราคา โปรโมชั่น", type: "สายฉลาดใช้เงิน คุ้มค่าที่สุด" }
-        ]
-      },
-      {
-        title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?",
-        options: [
-          { text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา ชอบเข้าใจความรู้สึกคนอื่น" },
-          { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว และไม่ชอบเสียเวลา" },
-          { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน ชอบความสมบูรณ์แบบ" }
-        ]
-      },
-      {
-        title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?",
-        options: [
-          { text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสันให้คนรอบข้าง" },
-          { text: "มุมเงียบๆ คุยกับเพื่อนสนิทแค่ 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ คุยเรื่องลึกซึ้ง" },
-          { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขที่แท้จริง (การกิน)" }
-        ]
-      },
-      {
-        title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?",
-        options: [
-          { text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น มีวิสัยทัศน์สูง" },
-          { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวันให้ดีที่สุด", type: "สายโฟกัสปัจจุบัน ไม่กดดันตัวเองเกินไป" },
-          { text: "ปล่อยให้ชีวิตไหลไปตามโอกาสที่เข้ามา", type: "สายยืดหยุ่น ปรับตัวเก่งตามสถานการณ์" }
-        ]
-      },
-      {
-        title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?",
-        options: [
-          { text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน มีความทะเยอทะยาน" },
-          { text: "คนใจดี อยู่ด้วยแล้วมีความสุข อบอุ่น", type: "สายสร้างพลังบวก ส่งต่อความรัก" },
-          { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์ เป็นคลื่นความสุข" }
-        ]
-      }
+      { title: "1. วันหยุดสุดสัปดาห์ คุณอยากทำอะไรมากที่สุด?", options: [{ text: "ไปเที่ยวต่างจังหวัด / ตั้งแคมป์", type: "สายลุย ชอบธรรมชาติและการผจญภัย" }, { text: "นอนดูซีรีส์อยู่ห้องชิลๆ", type: "สายสโลว์ไลฟ์ รักความสงบ" }, { text: "ไปเดินห้าง ช้อปปิ้ง หาคาเฟ่เก๋ๆ", type: "สายแฟชั่น ชอบความทันสมัย" }] },
+      { title: "2. เวลาเจอเรื่องเครียด คุณเลือกวิธีไหนในการฮีลใจ?", options: [{ text: "กินของอร่อยๆ ที่ชอบ", type: "นักชิม ใช้ความอร่อยเยียวยา" }, { text: "ออกกำลังกาย / เล่นกีฬา", type: "สายแอคทีฟ ปลดปล่อยพลังงาน" }, { text: "คุยกับเพื่อนสนิท / ระบายให้คนอื่นฟัง", type: "สายเอ็กโทรเวิร์ต รักมิตรภาพ" }] },
+      { title: "3. อาหารมื้อเย็นที่คู่ควรกับคุณคืออะไร?", options: [{ text: "ชาบู / หมูกระทะ", type: "สายปาร์ตี้ ชอบกินจัดเต็ม" }, { text: "สลัด / อาหารคลีนเพื่อสุขภาพ", type: "สายเฮลตี้ ใส่ใจสุขภาพ" }, { text: "อาหารตามสั่งง่ายๆ รวดเร็ว", type: "สายยุทธศาสตร์ เน้นความคล่องตัว" }] },
+      { title: "4. เมื่อต้องทำงานเป็นกลุ่ม คุณมักจะรับบทบาทไหน?", options: [{ text: "ผู้นำ / คนคอยแจกจ่ายงาน", type: "สายลีดเดอร์ ชอบบริหาร" }, { text: "คนคิดไอเดีย / ออกแบบงาน", type: "สายคริเอทีฟ ความคิดสร้างสรรค์สูง" }, { text: "ฝ่ายหาข้อมูล / คอยสนับสนุนเพื่อน", type: "สายซัพพอร์ต ละเอียดรอบคอบ" }] },
+      { title: "5. เครื่องดื่มแก้วโปรดช่วงเช้าของคุณคือ?", options: [{ text: "กาแฟดำ / อเมริกาโน่", type: "สายจริงจัง พร้อมลุยงาน" }, { text: "ชาไข่มุก / นมสดหวานร้อย", type: "สายสดใส เติมความหวาน" }, { text: "น้ำผลไม้สกัด / น้ำเปล่าเย็นๆ", type: "สายรักตัวเอง เน้นความสดชื่น" }] },
+      { title: "6. ถ้าชนะรางวัลใหญ่ คุณจะเอาเงินไปทำอะไรก่อน?", options: [{ text: "ลงทุน / เก็บออมในธนาคาร", type: "สายวางแผนอนาคต มั่นคง" }, { text: "ตั๋วเครื่องบินไปเที่ยวรอบโลก", type: "สายรักอิสระ เปิดโลกทัศน์" }, { text: "ซื้อมือถือใหม่ / ของที่อยากได้", type: "สายรางวัลชีวิต ให้ความสุขปัจจุบัน" }] },
+      { title: "7. สไตล์การแต่งตัวที่คุณชอบที่สุด?", options: [{ text: "เสื้อยืด กางเกงยีนส์ สบายๆ", type: "สายมินิมอล เน้นความสะดวก" }, { text: "จัดเต็มตามเทรนด์แฟชั่นล่าสุด", type: "สายโดดเด่น มั่นใจสูง" }, { text: "ชุดทางการ / เนี๊ยบเรียบร้อย", type: "สายมืออาชีพ ดูน่าเชื่อถือ" }] },
+      { title: "8. เวลาไปเที่ยว คุณชอบพักที่ไหนมากที่สุด?", options: [{ text: "โรงแรม 5 ดาว สิ่งอำนวยความสะดวกครบ", type: "สายลักชัวรี ชอบความสบาย" }, { text: "โฮมสเตย์สัมผัสวิถีชาวบ้าน", type: "สายอินดี้ ชอบเรียนรู้ culture" }, { text: "พูลวิลล่าปาร์ตี้กับกลุ่มเพื่อน", type: "สายกิจกรรม ชอบความสนุกสนาน" }] },
+      { title: "9. แนวเพลงที่คุณเปิดฟังบ่อยที่สุด?", options: [{ text: "Pop / K-Pop ฟังง่าย จังหวะสนุก", type: "สายสดใส ทันกระแส" }, { text: "Lo-fi / Acoustic ฟังสบาย", type: "สายมีสมาธิ ชอบความสงบ" }, { text: "Rock / Hip-Hop จังหวะหนักแน่น", type: "สายพลังเยอะ มีแพสชัน" }] },
+      { title: "10. เวลาต้องตัดสินใจเรื่องสำคัญ คุณใช้อะไรนำทาง?", options: [{ text: "เหตุผล ข้อมูล และสถิติ", type: "สายตรรกะ คิดเป็นระบบ" }, { text: "ความรู้สึกแรก / สัญชาตญาณ", type: "สายอาร์ต เชื่อในความรู้สึก" }, { text: "ปรึกษาและฟังความเห็นจากคนรอบข้าง", type: "สายประตินิยม ใส่ใจผู้อื่น" }] },
+      { title: "11. โซเชียลมีเดียที่คุณเล่นบ่อยที่สุดคือ?", options: [{ text: "TikTok / Reels (คลิปสั้น)", type: "สายบันเทิง ชอบความรวดเร็ว" }, { text: "Instagram (คุมโทนรูปสวยๆ)", type: "สายสร้างสรรค์ ชอบเสพศิลปะ" }, { text: "X (Twitter) / Facebook", type: "สายทันโลก ติดตามข่าวสาร" }] },
+      { title: "12. สัตว์เลี้ยงประเภทไหนที่เป็นตัวแทนของคุณ?", options: [{ text: "สุนัข (ซื่อสัตย์ ร่าเริง)", type: "สายเฟรนด์ลี่ เป็นมิตร" }, { text: "แมว (เป็นตัวของตัวเอง อินดี้)", type: "สายลึกลับ รักอิสระ" }, { text: "คาปิบาร่า (สโลว์ไลฟ์)", type: "สายชิลขั้นสุด" }] },
+      { title: "13. คุณคิดอย่างไรกับการนัดหมาย?", options: [{ text: "ไปถึงก่อนเวลาเสมอ 10-15 นาที", type: "สายตรงต่อเวลา รับผิดชอบสูง" }, { text: "ไปถึงตรงเวลาเป๊ะพอดี", type: "สายจัดการเวลาดีเยี่ยม" }, { text: "สายเลทนิดหน่อย 5-10 นาที", type: "สายยืดหยุ่น" }] },
+      { title: "14. วิธีจัดการกับของเสีย/ของไม่ได้ใช้ในบ้าน?", options: [{ text: "ตัดใจทิ้งทันที / บริจาคให้หมด", type: "สายเด็ดขาด ชอบความสะอาด" }, { text: "เก็บไว้ก่อน เผื่อได้ใช้ในอนาคต", type: "สายช่างเสียดาย คุ้มค่า" }, { text: "เอามา DIY ดัดแปลงเป็นของใหม่", type: "สายช่างคิด ชอบประดิษฐ์" }] },
+      { title: "15. สภาพอากาศแบบไหนที่คุณชอบที่สุด?", options: [{ text: "อากาศหนาว มีหมอก เย็นสบาย", type: "สายโรแมนติก ชอบความอบอุ่น" }, { text: "แดดจัด ฟ้าใส สดใส", type: "สายแอคทีฟ ชอบกิจกรรม" }, { text: "ฝนตกพรำๆ นั่งฟังเสียงฝน", type: "สายลึกซึ้ง ชอบจินตนาการ" }] },
+      { title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?", options: [{ text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์", type: "สายเป้าหมายชัดเจน" }, { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายชอบความประหลาดใจ" }, { text: "เปรียบเทียบราคา ป้ายลดราคา", type: "สายฉลาดใช้เงิน" }] },
+      { title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?", options: [{ text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา เข้าใจผู้อื่น" }, { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว" }, { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน สมบูรณ์แบบ" }] },
+      { title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?", options: [{ text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสัน" }, { text: "มุมเงียบๆ คุยกับเพื่อนสนิท 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ" }, { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขการกิน" }] },
+      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปรับตัวเก่ง" }] },
+      { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
 
-    // ตัวแปรเกม
     let currentQuestionIndex = 0;
     let selectedTypes = [];
     let isQuizActive = false;
-
     const player = { x: 400, y: 500, size: 20, speed: 5, color: '#00ff88' };
     let bullets = [];
     let currentZombie = null;
-
     const keys = {};
     let mousePos = { x: 0, y: 0 };
 
     window.addEventListener('keydown', e => keys[e.key] = true);
     window.addEventListener('keyup', e => keys[e.key] = false);
-    
     canvas.addEventListener('mousemove', e => {
       const rect = canvas.getBoundingClientRect();
       mousePos.x = e.clientX - rect.left;
@@ -325,49 +117,28 @@
 
     canvas.addEventListener('click', () => {
       if (!isQuizActive && currentQuestionIndex < 20) {
-        // ยิงกระสุน
         const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-        bullets.push({
-          x: player.x,
-          y: player.y,
-          vx: Math.cos(angle) * 10,
-          vy: Math.sin(angle) * 10
-        });
+        bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 10, vy: Math.sin(angle) * 10 });
       }
     });
 
     function spawnZombie() {
       if (currentQuestionIndex < 20) {
-        currentZombie = {
-          x: Math.random() * (canvas.width - 100) + 50,
-          y: Math.random() * (canvas.height / 2) + 50,
-          size: 25,
-          hp: 1,
-          color: '#ff4444'
-        };
-      } else {
-        currentZombie = null;
-      }
+        currentZombie = { x: Math.random() * 700 + 50, y: Math.random() * 250 + 50, size: 25, color: '#ff4444' };
+      } else { currentZombie = null; }
     }
-
     spawnZombie();
 
     function update() {
       if (isQuizActive) return;
-
-      // บังคับตัวละคร
       if ((keys['ArrowUp'] || keys['w']) && player.y > player.size) player.y -= player.speed;
       if ((keys['ArrowDown'] || keys['s']) && player.y < canvas.height - player.size) player.y += player.speed;
       if ((keys['ArrowLeft'] || keys['a']) && player.x > player.size) player.x -= player.speed;
       if ((keys['ArrowRight'] || keys['d']) && player.x < canvas.width - player.size) player.x += player.speed;
 
-      // เคลื่อนที่กระสุน
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
-        b.x += b.vx;
-        b.y += b.vy;
-
-        // กระสุนชนซอมบี้
+        b.x += b.vx; b.y += b.vy;
         if (currentZombie) {
           const dist = Math.hypot(b.x - currentZombie.x, b.y - currentZombie.y);
           if (dist < currentZombie.size) {
@@ -376,137 +147,80 @@
             break;
           }
         }
-
-        // ลบกระสุนตกจอ
-        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-          bullets.splice(i, 1);
-        }
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(i, 1);
       }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // วาดผู้เล่น
       ctx.fillStyle = player.color;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
 
-      // วาดเส้นปืนเล็ง
       ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)';
-      ctx.beginPath();
-      ctx.moveTo(player.x, player.y);
-      ctx.lineTo(mousePos.x, mousePos.y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(mousePos.x, mousePos.y); ctx.stroke();
 
-      // วาดกระสุน
       ctx.fillStyle = '#ffff00';
-      bullets.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill(); });
 
-      // วาดซอมบี้
       if (currentZombie) {
         ctx.fillStyle = currentZombie.color;
-        ctx.beginPath();
-        ctx.arc(currentZombie.x, currentZombie.y, currentZombie.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // ตาซอมบี้
+        ctx.beginPath(); ctx.arc(currentZombie.x, currentZombie.y, currentZombie.size, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(currentZombie.x - 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
-        ctx.arc(currentZombie.x + 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(currentZombie.x - 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
+        ctx.arc(currentZombie.x + 7, currentZombie.y - 5, 3, 0, Math.PI * 2); ctx.fill();
       }
     }
 
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
+    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
     gameLoop();
 
-    // แสดงคำถามเมื่อยิงซอมบี้ตาย
     function showQuiz() {
       isQuizActive = true;
       const q = questions[currentQuestionIndex];
       document.getElementById('quizTitle').innerText = q.title;
-      
       const container = document.getElementById('optionsContainer');
       container.innerHTML = '';
-
       q.options.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        btn.innerText = opt.text; // แสดงเฉพาะข้อความตัวเลือก (ไม่แสดงคำอธิบาย)
+        btn.innerText = opt.text;
         btn.onclick = () => selectAnswer(opt.type);
         container.appendChild(btn);
       });
-
       document.getElementById('quizModal').style.display = 'flex';
     }
 
     function selectAnswer(type) {
       selectedTypes.push(type);
       document.getElementById('quizModal').style.display = 'none';
-      
       currentQuestionIndex++;
       document.getElementById('zombieCount').innerText = currentQuestionIndex;
-
-      if (currentQuestionIndex < 20) {
-        isQuizActive = false;
-        spawnZombie();
-      } else {
-        finishGame();
-      }
+      if (currentQuestionIndex < 20) { isQuizActive = false; spawnZombie(); }
+      else { finishGame(); }
     }
 
     function finishGame() {
       isQuizActive = true;
       document.getElementById('resultModal').style.display = 'flex';
-
       let timeLeft = 10;
       const timerEl = document.getElementById('timerText');
-      
       const countdown = setInterval(() => {
         timeLeft--;
         timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          showFinalResult();
-        }
+        if (timeLeft <= 0) { clearInterval(countdown); showFinalResult(); }
       }, 1000);
     }
 
     function showFinalResult() {
       document.getElementById('timerText').style.display = 'none';
-
-      // นับความถี่ของคำตอบที่เลือกมากที่สุด
       const counts = {};
       selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
-
-      let topType = "";
-      let maxCount = 0;
-      for (let t in counts) {
-        if (counts[t] > maxCount) {
-          maxCount = counts[t];
-          topType = t;
-        }
-      }
+      let topType = "", maxCount = 0;
+      for (let t in counts) { if (counts[t] > maxCount) { maxCount = counts[t]; topType = t; } }
 
       const resultBox = document.getElementById('resultBox');
       resultBox.style.display = 'block';
-      resultBox.innerHTML = `
-        <h3>คุณคือ: <span style="color: #ffbb00;">${topType}</span></h3>
-        <p>คุณรอดชีวิตจากซอมบี้ทั้ง 20 ตัว หพร้อมกับการเผยตัวตนที่แท้จริงของคุณ!</p>
-      `;
-
+      resultBox.innerHTML = `<h3>คุณคือ: <span style="color: #ffbb00;">${topType}</span></h3><p>คุณรอดชีวิตจากซอมบี้ทั้ง 20 ตัว!</p>`;
       socket.emit('submitAnswer', { optionText: topType });
     }
   </script>
