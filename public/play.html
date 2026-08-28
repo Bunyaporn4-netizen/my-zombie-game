@@ -58,6 +58,38 @@
       z-index: 5;
     }
 
+    /* หน้าจอ Intro สไตล์ Cinematic ตามคลิป */
+    #startCountdownModal {
+      display: flex;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      border-radius: 12px;
+    }
+
+    #startCountdownText {
+      font-size: 48px;
+      font-weight: 900;
+      color: #ffffff;
+      text-align: center;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(0, 255, 136, 0.6);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+    }
+
+    #startCountdownText.show {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
     .modal {
       display: none;
       position: absolute;
@@ -136,6 +168,11 @@
     <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
+    <!-- หน้าจอ Cinematic Intro ก่อนเริ่มเกม -->
+    <div id="startCountdownModal">
+      <div id="startCountdownText">ARE YOU READY?</div>
+    </div>
+
     <div id="quizModal" class="modal">
       <div class="modal-content">
         <h2 id="question-title">กำลังโหลดคำถาม...</h2>
@@ -162,17 +199,28 @@
     const W = 800;
     const H = 600;
 
-    // --- โหลดระบบเสียง (Audio) ---
+    // --- โหลดไฟล์เสียง ---
     const bgm = new Audio('/audio/bgm.mp3');
     bgm.loop = true;
-    bgm.volume = 0.3; // ความดังเพลงประกอบ (0.0 - 1.0)
+    bgm.volume = 0.4;
+    bgm.preload = 'auto';
+
+    const readySound = new Audio('/audio/ready.mp3');
+    readySound.volume = 0.7;
 
     const shootSound = new Audio('/audio/shoot.mp3');
     shootSound.volume = 0.5;
 
-    const hitSound = new Audio('/audio/hit.mp3');
-    hitSound.volume = 0.6;
+    const quizSound = new Audio('/audio/quiz.mp3');
+    quizSound.volume = 0.6;
 
+    const beepSound = new Audio('/audio/beep.mp3');
+    beepSound.volume = 0.5;
+
+    const startSound = new Audio('/audio/start.mp3');
+    startSound.volume = 0.7;
+
+    let gameStarted = false;
     let currentQuestionIndex = 0;
     let selectedTypes = [];
 
@@ -253,6 +301,46 @@
       getRandomZombie(H * 0.70, 220),
       getRandomZombie(H * 0.80, 150)
     ];
+
+    // --- ระบบ Cinematic Intro เปลี่ยนตามจังหวะคลิป ---
+    function startCinematicIntro() {
+      const el = document.getElementById('startCountdownText');
+      const sequence = [
+        { text: "ARE YOU READY?", duration: 1800, color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)" },
+        { text: "THE TIME HAS COME", duration: 1800, color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)" },
+        { text: "LET THE SHOW BEGIN", duration: 1800, color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)" }
+      ];
+
+      let index = 0;
+
+      function showNextText() {
+        if (index < sequence.length) {
+          const item = sequence[index];
+          el.innerText = item.text;
+          el.style.color = item.color;
+          el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
+          
+          readySound.currentTime = 0;
+          readySound.play().catch(err => {});
+
+          el.classList.add('show');
+
+          setTimeout(() => {
+            el.classList.remove('show');
+            index++;
+            setTimeout(showNextText, 400);
+          }, item.duration);
+
+        } else {
+          startSound.currentTime = 0;
+          startSound.play().catch(err => {});
+          document.getElementById('startCountdownModal').style.display = 'none';
+          gameStarted = true;
+        }
+      }
+
+      showNextText();
+    }
 
     function drawCemeteryBackground() {
       const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
@@ -339,11 +427,10 @@
       }
     }
 
-    // วาดซอมบี้จากรูปภาพโดยตรง (ไม่มีวงกลมเขียวสำรองแล้ว)
     function drawZombies() {
       zombies.forEach((z, idx) => {
         if (!z.alive) return;
-        z.x -= z.speed;
+        if (gameStarted) z.x -= z.speed;
 
         if (z.x < -100) {
           zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
@@ -365,15 +452,9 @@
     }
 
     function handlePointer(e) {
-      // สั่งเล่นเพลงประกอบเมื่อกดหน้าจอครั้งแรก (ปลดล็อกข้อจำกัดของเบราว์เซอร์)
-      if (bgm.paused) {
-        bgm.play().catch(err => console.log("Audio play blocked:", err));
-      }
-
-      if (isQuizActive) return;
+      if (!gameStarted || isQuizActive) return;
       e.preventDefault();
 
-      // เล่นเสียงยิงปืน
       shootSound.currentTime = 0;
       shootSound.play().catch(err => {});
 
@@ -433,10 +514,6 @@
           createExplosion(b.tx, b.ty);
 
           if (b.hit) {
-            // เล่นเสียงซอมบี้โดนยิง/ระเบิด
-            hitSound.currentTime = 0;
-            hitSound.play().catch(err => {});
-
             b.hit.alive = false;
             setTimeout(showQuiz, 200);
           }
@@ -458,6 +535,10 @@
 
     function showQuiz() {
       isQuizActive = true;
+
+      quizSound.currentTime = 0;
+      quizSound.play().catch(err => {});
+
       const q = questions[currentQuestionIndex];
       document.getElementById('question-title').innerText = q.title;
 
@@ -510,6 +591,9 @@
     function showFinalResult() {
       document.getElementById('timerText').style.display = 'none';
 
+      bgm.currentTime = 0;
+      bgm.play().catch(err => console.log("Audio play blocked:", err));
+
       const counts = {};
       selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
 
@@ -525,13 +609,15 @@
       const resultBox = document.getElementById('result-box');
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 คุณคือ: ${topType}</h3>
-        <p style="margin-bottom:0; font-size:0.9rem;">คุณได้พิชิตซอมบี้ครบทั้ง 20 ตัวเรียบร้อยแล้ว!</p>
+        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 ไลฟ์สไตล์ที่เหมาะสมกับคุณคือ: ${topType}</h3>
+        <p style="margin-bottom:0; font-size:0.9rem;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
       `;
 
       if (socket) socket.emit('submitAnswer', { optionText: topType });
     }
 
+    // เริ่มต้นอินโทร Cinematic ทันทีเมื่อโหลดหน้าเว็บ
+    startCinematicIntro();
     gameLoop();
   </script>
 </body>
