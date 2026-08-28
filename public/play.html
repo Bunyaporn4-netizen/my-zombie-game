@@ -704,7 +704,7 @@
       { imgIndex: 0, w: 60, h: 75, speed: 5.5 },
       { imgIndex: 1, w: 80, h: 95, speed: 5.5 },
       { imgIndex: 2, w: 80, h: 95, speed: 5.5 },
-      { imgIndex: 3, w: 70, h: 85, speed: 5.5 }
+      { imgIndex: 3, w: 60, h: 75, speed: 5.5 }
     ];
 
     function getRandomZombie(laneY, extraDelay = 0) {
@@ -924,7 +924,7 @@
 
       const speed = 20;
 
-      if (cannonBalls.length > 10) cannonBalls.shift();
+      if (cannonBalls.length > 5) cannonBalls.shift();
 
       cannonBalls.push({
         x: startX, y: startY,
@@ -1056,7 +1056,7 @@
       const resultBox = document.getElementById('result-box');
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 ไลฟ์สไตล์ที่เหมาะสมกับคุณคือ: ${topType}</h3>
+        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 แผนการเรียนเหมาะสมกับคุณคือ: ${topType}</h3>
         <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
         <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
         <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
