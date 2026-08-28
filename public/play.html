@@ -470,7 +470,7 @@
       }
     }
 
-    function submitPlayerName() {
+    () {
       const input = document.getElementById('playerNameInput').value.trim();
       if (!input) {
         alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
@@ -688,6 +688,30 @@
         ]
     },
     ];
+      function submitPlayerName() {
+        const nameInput = document.getElementById('playerNameInput');
+        if (!nameInput || !nameInput.value.trim()) {
+          alert("กรุณากรอกชื่อก่อนเข้าเล่นครับ!");
+          return;
+        }
+
+        // บันทึกชื่อผู้เล่น
+        playerName = nameInput.value.trim();
+        const displayName = document.getElementById('playerDisplayName');
+        if (displayName) displayName.innerText = playerName;
+
+        // ซ่อน Modal หน้ากรอกชื่อ และ Modal Countdown
+        const nameModal = document.getElementById('nameInputModal');
+        if (nameModal) nameModal.style.display = 'none';
+
+        const countdownModal = document.getElementById('startCountdownModal');
+        if (countdownModal) countdownModal.style.display = 'none';
+
+        // สั่งให้เกมและคำถามเริ่มทันทีโดยไม่ต้องรอ Host
+        if (typeof initZombies === 'function') initZombies();
+        if (typeof gameLoop === 'function') gameLoop();
+        if (typeof startNewQuestion === 'function') startNewQuestion();
+      }
 
     const zombieImages = [new Image(), new Image(), new Image(), new Image()];
     zombieImages.forEach((img, i) => {
