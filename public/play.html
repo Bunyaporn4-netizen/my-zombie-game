@@ -7,7 +7,6 @@
   <style>
     * { 
       box-sizing: border-box; 
-      /* ป้องกัน double-tap zoom และการเลือกข้อความ */
       touch-action: manipulation;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -27,7 +26,6 @@
       background-color: #000000;
       font-family: 'Kanit', sans-serif;
       color: #ffffff;
-      /* ล็อคไม่ให้ซูมหรือเลื่อนหน้าจอ */
       touch-action: none;
     }
     
@@ -151,7 +149,7 @@
       font-size: 1rem;
       text-align: center;
       outline: none;
-      touch-action: auto; /* อนุญาตให้พิมพ์ใน input ได้ */
+      touch-action: auto;
     }
 
     .input-box input:focus {
@@ -277,6 +275,58 @@
       font-size: 0.9rem;
       line-height: 1.4;
     }
+
+    /* สไตล์เพิ่มเติมปุ่ม NEXT และหน้า Ranking */
+    .btn-next {
+      margin-top: 18px;
+      padding: 12px 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #000;
+      background: #00ff88;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+      touch-action: manipulation;
+    }
+
+    .btn-next:active {
+      transform: scale(0.95);
+    }
+
+    .ranking-list {
+      width: 100%;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .ranking-item {
+      background: #2a2a2a;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid #00ff88;
+    }
+
+    .ranking-bar-bg {
+      width: 100%;
+      background: #333;
+      height: 10px;
+      border-radius: 5px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .ranking-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #03dac6);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
   </style>
 </head>
 <body>
@@ -322,16 +372,25 @@
         <div id="result-box"></div>
       </div>
     </div>
+
+    <div id="rankingModal" class="modal">
+      <div class="modal-content">
+        <h2>📊 สถิติการเลือกสายเรียน</h2>
+        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปผลอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
+        
+        <div id="rankingContainer" class="ranking-list"></div>
+
+        <button class="btn-next" onclick="location.reload()">🔄 เล่นใหม่อีกครั้ง</button>
+      </div>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    // 1. ป้องกัน Touch Scroll
     document.addEventListener('touchmove', function(e) {
       e.preventDefault();
     }, { passive: false });
 
-    // 2. ป้องกัน Double-Tap Zoom บน iOS Safari
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
       const now = (new Date()).getTime();
@@ -341,7 +400,6 @@
       lastTouchEnd = now;
     }, false);
 
-    // 3. ป้องกัน Gesture Zoom (การใช้นิ้วถ่างซูม)
     document.addEventListener('gesturestart', function(e) {
       e.preventDefault();
     });
@@ -605,14 +663,18 @@
     }
 
     function createExplosion(x, y) {
-      for (let i = 0; i < 20; i++) {
+      if (particles.length > 60) {
+        particles.splice(0, 20);
+      }
+
+      for (let i = 0; i < 15; i++) {
         particles.push({
           x: x, y: y,
           vx: (Math.random() - 0.5) * 10,
           vy: (Math.random() - 0.5) * 10,
           radius: Math.random() * 4 + 2,
           color: ['#ff4757', '#ffa502', '#badc58', '#ffffff'][Math.floor(Math.random() * 4)],
-          life: 20
+          life: 15
         });
       }
     }
@@ -645,8 +707,17 @@
       document.getElementById('scoreText').innerText = score;
     }
 
+    let lastShootTime = 0;
+    const SHOOT_COOLDOWN = 120;
+
     function handlePointer(e) {
       if (!gameStarted || isQuizActive) return;
+
+      const now = Date.now();
+      if (now - lastShootTime < SHOOT_COOLDOWN) {
+        return;
+      }
+      lastShootTime = now;
 
       playSound('shoot');
 
@@ -671,6 +742,9 @@
       );
 
       const speed = 20;
+
+      if (cannonBalls.length > 10) cannonBalls.shift();
+
       cannonBalls.push({
         x: startX, y: startY,
         vx: Math.cos(cannonAngle) * speed,
@@ -805,6 +879,10 @@
         <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
         <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
         <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+
+        <div style="text-align: center;">
+          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
+        </div>
       `;
 
       if (socket) {
@@ -814,6 +892,45 @@
           optionText: topType 
         });
       }
+    }
+
+    // ฟังก์ชันสำหรับสลับไปหน้าจัดอันดับสถิติสายเรียน
+    function showRankingPage() {
+      document.getElementById('resultModal').style.display = 'none';
+
+      // จำลองข้อมูลสถิติ
+      const mockData = [
+        { name: "🔬 สายวิทย์-คณิต", count: 45, color: "#ff4757" },
+        { name: "🛠️ สายอาชีพ", count: 32, color: "#ffa502" },
+        { name: "🎨 สายศิลป์", count: 28, color: "#2ed573" },
+        { name: "🗣️ สายภาษา", count: 19, color: "#1e90ff" }
+      ];
+
+      const total = mockData.reduce((acc, cur) => acc + cur.count, 0);
+
+      const container = document.getElementById('rankingContainer');
+      container.innerHTML = '';
+
+      mockData.forEach(item => {
+        const percent = Math.round((item.count / total) * 100);
+        const div = document.createElement('div');
+        div.className = 'ranking-item';
+        div.style.borderLeftColor = item.color;
+        div.innerHTML = `
+          <div style="width: 100%;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95rem;">
+              <span>${item.name}</span>
+              <span style="color:${item.color}">${percent}% (${item.count} คน)</span>
+            </div>
+            <div class="ranking-bar-bg">
+              <div class="ranking-bar-fill" style="width: ${percent}%; background: ${item.color};"></div>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('rankingModal').style.display = 'flex';
     }
 
     resizeCanvas();
