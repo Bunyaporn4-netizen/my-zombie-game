@@ -367,23 +367,30 @@
       <div class="modal-content">
         <h2>🎉 กำลังประมวลผลผลลัพธ์...</h2>
         <p style="font-size: 0.9rem;">กรุณารอสักครู่ ระบบกำลังคำนวณตัวตนของคุณ</p>
-        <div id="timerText">10</div>
+        <div id="timerText">5</div>
         <div id="result-box"></div>
       </div>
     </div>
 
     <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
+    <!-- Modal หน้าแสดงจัดอันดับ (Ranking) -->
     <div id="rankingModal" class="modal">
       <div class="modal-content">
         <h2>📊 สถิติการเลือกสายเรียน</h2>
-        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปสัดส่วนอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
+        <div class="total-students-badge">👨‍🎓 นักเรียนที่มาตอบทั้งหมด: <span id="totalStudentsText">0</span> คน</div>
         
         <div id="rankingContainer" class="ranking-list"></div>
 
-        <button class="btn-next" onclick="location.reload()">🔄 เล่นใหม่อีกครั้ง</button>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+          <button class="btn-next" onclick="location.reload()">🔄 เล่นใหม่อีกครั้ง</button>
+          
+          <!-- ปุ่มของแอดมิน ซ่อนไว้เป็นค่าเริ่มต้นด้วย display: none; -->
+          <button id="btnAdminReset" class="btn-next" onclick="resetStatsByAdmin()" style="display: none; background: #ff4444; color: white; box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);">
+            🗑️ ล้างสถิติ (สำหรับแอดมิน)
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -1113,7 +1120,34 @@
 
       document.getElementById('rankingModal').style.display = 'flex';
     }
+          
+          // 1. ตรวจสอบว่ามี ?admin=true ใน URL หรือไม่เมื่อโหลดหน้าเว็บ
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // เช็กว่าพารามิเตอร์ admin มีค่าเป็น true หรือไม่
+  if (urlParams.get('admin') === 'true') {
+    const adminBtn = document.getElementById('btnAdminReset');
+    if (adminBtn) {
+      adminBtn.style.display = 'inline-block'; // สั่งให้ปุ่มแสดงผลเฉพาะแอดมิน
+    }
+  }
+});
 
+// 2. ฟังก์ชันสั่งล้างสถิติสำหรับแอดมิน
+function resetStatsByAdmin() {
+  const confirmReset = confirm("⚠️ ยืนยันการล้างข้อมูลสถิติทั้งหมดหรือไม่?\nข้อมูลสถิติการตอบของผู้เล่นทั้งหมดจะถูกรีเซ็ตเป็น 0");
+  
+  if (confirmReset) {
+    // ลบข้อมูลสถิติที่บันทึกใน LocalStorage
+    localStorage.removeItem('quizStats');
+    
+    alert("✅ ล้างข้อมูลสถิติเรียบร้อยแล้ว!");
+    
+    // โหลดหน้าเว็บใหม่เพื่ออัปเดตหน้าจอ
+    location.reload();
+  }
+}
     resizeCanvas();
     initZombies(); 99                    
     gameLoop();
