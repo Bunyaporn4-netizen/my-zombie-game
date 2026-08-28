@@ -210,26 +210,44 @@
     const W = 800;
     const H = 600;
 
-    // --- โหลดไฟล์เสียง ---
+    // --- ระบบ Web Audio API สำหรับ Sync เสียงและภาพ 100% ---
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContextClass();
+    const audioBuffers = {};
+
+    // โหลดไฟล์เสียงลงหน่วยความจำ RAM ล่วงหน้า
+    async function loadAudioBuffer(key, url) {
+      try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        audioBuffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        console.warn(`Failed to load audio: ${url}`, e);
+      }
+    }
+
+    // โหลดไฟล์เสียงทั้งหมดเตรียมไว้
+    loadAudioBuffer('ready', '/audio/ready.mp3');
+    loadAudioBuffer('time', '/audio/time_has_come.mp3');
+    loadAudioBuffer('begin', '/audio/let_show_begin.mp3');
+    loadAudioBuffer('start', '/audio/start.mp3');
+    loadAudioBuffer('shoot', '/audio/shoot.mp3');
+    loadAudioBuffer('quiz', '/audio/quiz.mp3');
+
+    // BGM ยังใช้ Audio Element ปกติ
     const bgm = new Audio('/audio/bgm.mp3');
     bgm.loop = true;
     bgm.volume = 0.4;
 
-    const voiceReady = new Audio('/audio/ready.mp3'); 
-    const voiceTime = new Audio('/audio/time_has_come.mp3'); 
-    const voiceBegin = new Audio('/audio/let_show_begin.mp3'); 
-
-    const shootSound = new Audio('/audio/shoot.mp3');
-    shootSound.volume = 0.5;
-
-    const quizSound = new Audio('/audio/quiz.mp3');
-    quizSound.volume = 0.6;
-
-    const beepSound = new Audio('/audio/beep.mp3');
-    beepSound.volume = 0.5;
-
-    const startSound = new Audio('/audio/start.mp3');
-    startSound.volume = 0.7;
+    // ฟังก์ชันเล่นเสียงจาก Buffer ที่โหลดไว้ล่วงหน้า (0ms Latency)
+    function playBufferSound(key) {
+      if (!audioBuffers[key]) return 0;
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffers[key];
+      source.connect(audioCtx.destination);
+      source.start(0);
+      return audioBuffers[key].duration; // ส่งคืนความยาวของไฟล์เสียง (วินาที)
+    }
 
     let gameStarted = false;
     let currentQuestionIndex = 0;
@@ -313,36 +331,25 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- ฟังก์ชันปลดล็อกสิทธิ์เล่นเสียงบนมือถือและคอมพิวเตอร์อย่างสมบูรณ์ ---
+    // --- เริ่มระบบและเปิดใช้งาน AudioContext ---
     async function initAndStartCinematic() {
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+
       document.getElementById('btnStartGame').style.display = 'none';
       document.getElementById('startCountdownText').style.display = 'block';
-
-      const allAudio = [voiceReady, voiceTime, voiceBegin, shootSound, quizSound, beepSound, startSound, bgm];
-      
-      // ปลดล็อกเสียงทุกไฟล์ขณะกดปุ่ม Tap to start
-      for (let audio of allAudio) {
-        try {
-          audio.muted = true;
-          await audio.play();
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-        } catch (e) {
-          audio.muted = false;
-        }
-      }
 
       startCinematicIntro();
     }
 
-    // --- ฟังก์ชัน Intro ที่ซิงค์ภาพตรงกับเสียง พร้อมระบบป้องกันภาพค้าง ---
+    // --- ฟังก์ชัน Intro ซิงค์ข้อความตรงตามระยะเวลาเสียงเป๊ะ 100% ---
     function startCinematicIntro() {
       const el = document.getElementById('startCountdownText');
       const sequence = [
-        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audio: voiceReady, duration: 1600 },
-        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audio: voiceTime, duration: 1600 },
-        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audio: voiceBegin, duration: 1600 }
+        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audioKey: "ready", defaultTime: 1.5 },
+        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audioKey: "time", defaultTime: 1.5 },
+        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audioKey: "begin", defaultTime: 1.5 }
       ];
 
       let index = 0;
@@ -354,35 +361,24 @@
           el.style.color = item.color;
           el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
 
+          // เล่นเสียงผ่าน AudioContext
+          const soundDuration = playBufferSound(item.audioKey);
+          
+          // ใช้เวลาจริงจากไฟล์เสียง (หากโหลดไม่สำเร็จใช้ defaultTime)
+          const displayDuration = soundDuration > 0 ? (soundDuration * 1000) : (item.defaultTime * 1000);
+
+          // ขึ้นข้อความพร้อมกับเสียงที่เริ่มออกทันที
           el.classList.add('show');
 
-          let hasEnded = false;
-
-          const nextStep = () => {
-            if (hasEnded) return;
-            hasEnded = true;
+          // จบข้อความเมื่อเสียงจบลงพอดี
+          setTimeout(() => {
             el.classList.remove('show');
             index++;
-            setTimeout(playNextStep, 200);
-          };
-
-          // ป้องกันค้างโดยใช้เวลา Fallback ตามความยาวปกติของเสียง
-          const fallbackTimer = setTimeout(nextStep, item.duration);
-
-          item.audio.onended = () => {
-            clearTimeout(fallbackTimer);
-            nextStep();
-          };
-
-          item.audio.currentTime = 0;
-          item.audio.play().catch(err => {
-            console.log("Audio play error, using fallback timer", err);
-          });
+            setTimeout(playNextStep, 200); // เว้นระยะ 0.2 วินาทีระหว่างประโยค
+          }, displayDuration);
 
         } else {
-          startSound.currentTime = 0;
-          startSound.play().catch(err => {});
-
+          playBufferSound('start');
           document.getElementById('startCountdownModal').style.display = 'none';
           gameStarted = true;
         }
@@ -504,8 +500,7 @@
       if (!gameStarted || isQuizActive) return;
       e.preventDefault();
 
-      shootSound.currentTime = 0;
-      shootSound.play().catch(err => {});
+      playBufferSound('shoot');
 
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -584,9 +579,7 @@
 
     function showQuiz() {
       isQuizActive = true;
-
-      quizSound.currentTime = 0;
-      quizSound.play().catch(err => {});
+      playBufferSound('quiz');
 
       const q = questions[currentQuestionIndex];
       document.getElementById('question-title').innerText = q.title;
