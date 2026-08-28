@@ -470,16 +470,29 @@
       }
     }
 
-    () {
-      const input = document.getElementById('playerNameInput').value.trim();
-      if (!input) {
+      function submitPlayerName() {
+      const inputElement = document.getElementById('playerNameInput');
+      const nameValue = inputElement ? inputElement.value.trim() : '';
+
+      if (!nameValue) {
         alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
         return;
       }
-      playerName = input;
-      document.getElementById('displayName').innerText = playerName;
-      document.getElementById('nameInputModal').style.display = 'none';
-      document.getElementById('startCountdownModal').style.display = 'flex';
+
+      playerName = nameValue;
+
+      const displayName = document.getElementById('displayName');
+      if (displayName) displayName.innerText = playerName;
+
+      const nameModal = document.getElementById('nameInputModal');
+      if (nameModal) nameModal.style.display = 'none';
+
+      const countdownModal = document.getElementById('startCountdownModal');
+      if (countdownModal) countdownModal.style.display = 'none';
+
+      if (typeof initZombies === 'function') initZombies();
+      if (typeof gameLoop === 'function') gameLoop();
+      if (typeof startNewQuestion === 'function') startNewQuestion();
     }
 
     let gameStarted = false;
