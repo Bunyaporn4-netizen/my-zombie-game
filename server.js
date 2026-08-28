@@ -8,6 +8,18 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
+const path = require('path');
+
+// บังคับให้ส่งไฟล์ play.html จากโฟลเดอร์ public เสมอ
+app.get('/play.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'play.html'));
+});
+
+// บังคับให้ส่งไฟล์ host.html จากโฟลเดอร์ public เสมอ
+app.get('/host.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'host.html'));
+});
+
 // ชุดคำถาม 20 ข้อ
 const questions = [
   {
