@@ -2,24 +2,28 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'play.html'));
-});
+function sendHTML(res, fileName) {
+  const publicPath = path.join(__dirname, 'public', fileName);
+  const rootPath = path.join(__dirname, fileName);
+  if (fs.existsSync(publicPath)) {
+    res.sendFile(publicPath);
+  } else {
+    res.sendFile(rootPath);
+  }
+}
 
-app.get('/play.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'play.html'));
-});
-
-app.get('/host.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'host.html'));
-});
+app.get('/', (req, res) => sendHTML(res, 'play.html'));
+app.get('/play.html', (req, res) => sendHTML(res, 'play.html'));
+app.get('/host.html', (req, res) => sendHTML(res, 'host.html'));
 
 const globalStats = {};
 
