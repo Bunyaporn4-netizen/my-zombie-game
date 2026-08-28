@@ -468,21 +468,31 @@
     }
 
     function submitPlayerName() {
-      const input = document.getElementById('playerNameInput').value.trim();
-      if (!input) {
-        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
-        return;
-      }
-      playerName = input;
-      document.getElementById('displayName').innerText = playerName;
-      document.getElementById('nameInputModal').style.display = 'none';
-      document.getElementById('startCountdownModal').style.display = 'flex';
-    }
+  const input = document.getElementById('playerNameInput');
+  if (!input || !input.value.trim()) {
+    alert("กรุณากรอกชื่อก่อนเข้าเล่นครับ!");
+    return;
+  }
 
-    let gameStarted = false;
-    let currentQuestionIndex = 0;
-    let selectedTypes = [];
+  // 1. อัปเดตชื่อผู้เล่น
+  playerName = input.value.trim();
+  const playerDisplay = document.querySelector('.user-info span, #displayName, #playerDisplayName');
+  if (playerDisplay) playerDisplay.innerText = "ผู้เล่น: " + playerName;
 
+  // 2. ซ่อน หน้าป๊อปอัปกรอกชื่อ
+  const nameModal = document.getElementById('nameInputModal');
+  if (nameModal) nameModal.style.display = 'none';
+
+  const countdownModal = document.getElementById('startCountdownModal');
+  if (countdownModal) countdownModal.style.display = 'none';
+
+  // 3. สั่งเปิดสภาวะเกมและเริ่มดึงคำถาม
+  isQuizActive = true;
+  if (typeof initZombies === 'function') initZombies();
+  if (typeof gameLoop === 'function') gameLoop();
+  if (typeof startNewQuestion === 'function') startNewQuestion();
+  if (typeof showNextQuestion === 'function') showNextQuestion();
+}
     const questions = [
     {
         title: "1. ถ้าครูให้เลือกทำโครงงานที่ต้องใช้เวลาหลายสัปดาห์ คุณอยากทำแบบใดมากที่สุด?",
