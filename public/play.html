@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Zombie Quiz Game - Mobile Optimized</title>
+  <title>Zombie Quiz Game - Cross Platform</title>
   <style>
     * { 
       box-sizing: border-box; 
-      touch-action: manipulation; /* ป้องกันการ double-tap zoom บนมือถือ */
+      touch-action: none; /* ป้องกันการสไลด์/ซูมหน้าจอขณะกดเล่นบน iPad และมือถือ */
+      -webkit-touch-callout: none; /* ป้องกันป๊อปอัปขึ้นเวลาแตะค้างบน iOS */
+      -webkit-user-select: none;   /* ป้องกันการคลุมดำเลือกข้อความ */
+      user-select: none;
     }
     body {
       font-family: 'Kanit', sans-serif;
@@ -19,16 +22,16 @@
       justify-content: center;
       min-height: 100vh;
       margin: 0;
-      padding: 10px;
+      padding: 5px;
       overflow: hidden;
     }
     
-    /* กรอบเกมปรับตามหน้าจอมือถืออัตโนมัติ */
+    /* กรอบเกมปรับตามหน้าจออัตโนมัติ (มือถือ/iPad/คอม) */
     #gameContainer {
       position: relative;
       width: 100%;
       max-width: 800px;
-      aspect-ratio: 4 / 3; /* รักษาอัตราส่วน 800x600 */
+      aspect-ratio: 4 / 3; /* อัตราส่วน 4:3 ให้พอดีกับ Canvas 800x600 */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -37,9 +40,7 @@
     canvas {
       width: 100%;
       height: 100%;
-      border: 3px solid #ff4444;
       background-color: #1e1e1e;
-      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
       border-radius: 12px;
     }
 
@@ -58,7 +59,7 @@
       z-index: 5;
     }
 
-    /* ป๊อปอัปคำถามบนมือถือ */
+    /* ป๊อปอัปคำถาม */
     .modal {
       display: none;
       position: absolute;
@@ -76,9 +77,9 @@
       background-color: #1e1e1e;
       border-radius: 12px;
       padding: 16px;
-      width: 100%;
+      width: 95%;
       max-width: 480px;
-      max-height: 90vh;
+      max-height: 85vh;
       overflow-y: auto;
       box-shadow: 0 8px 16px rgba(0,0,0,0.5);
       text-align: center;
@@ -88,18 +89,18 @@
     h2 {
       margin-top: 0;
       color: #bb86fc;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     .btn-option {
       background-color: #3700b3;
       color: white;
       border: none;
-      padding: 12px 16px;
-      margin: 8px 0;
+      padding: 10px 14px;
+      margin: 6px 0;
       width: 100%;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
       text-align: left;
@@ -211,10 +212,10 @@
     }));
 
     const zombieSpecs = [
-      { imgIndex: 0, w: 75, h: 95,  speed: 5.5, fallbackColor: '#2ed573' },
-      { imgIndex: 1, w: 60, h: 75,  speed: 5.5, fallbackColor: '#ffa502' },
-      { imgIndex: 2, w: 105, h: 120, speed: 5.5, fallbackColor: '#ff4757' },
-      { imgIndex: 3, w: 80, h: 105, speed: 5.5, fallbackColor: '#e1b12c' }
+      { imgIndex: 0, w: 75, h: 95,  speed: 5.5 },
+      { imgIndex: 1, w: 60, h: 75,  speed: 5.5 },
+      { imgIndex: 2, w: 105, h: 120, speed: 5.5 },
+      { imgIndex: 3, w: 80, h: 105, speed: 5.5 }
     ];
 
     function getRandomZombie(laneY, extraDelay = 0) {
@@ -227,7 +228,6 @@
         w: spec.w,
         h: spec.h,
         speed: spec.speed,
-        fallbackColor: spec.fallbackColor,
         alive: true
       };
     }
@@ -333,30 +333,28 @@
 
     // ฟังก์ชันลบสีขาวออกจากรูปภาพก่อนแสดงผล
     function drawImageWithoutWhite(img, x, y, w, h) {
-    if (!img.complete || img.naturalWidth === 0) return;
+      if (!img.complete || img.naturalWidth === 0) return;
 
-    // สร้าง Offscreen Canvas เพื่อประมวลผลรูป
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = img.naturalWidth;
-    offCanvas.height = img.naturalHeight;
-    const offCtx = offCanvas.getContext('2d');
-    
-    offCtx.drawImage(img, 0, 0);
-    const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-    const data = imgData.data;
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = img.naturalWidth;
+      offCanvas.height = img.naturalHeight;
+      const offCtx = offCanvas.getContext('2d');
+      
+      offCtx.drawImage(img, 0, 0);
+      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+      const data = imgData.data;
 
-    // วนลูปเช็คพิกเซล ถ้าใกล้เคียงสีขาว ให้ปรับ Alpha (ความใส) เป็น 0
-    for (let i = 0; i < data.length; i += 4) {
+      for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
         if (r > 230 && g > 230 && b > 230) {
-            data[i + 3] = 0; // โปร่งใส
+          data[i + 3] = 0;
         }
-    }
-    
-    offCtx.putImageData(imgData, 0, 0);
-    ctx.drawImage(offCanvas, x, y, w, h);
+      }
+      
+      offCtx.putImageData(imgData, 0, 0);
+      ctx.drawImage(offCanvas, x, y, w, h);
     }
 
     function drawZombies() {
@@ -371,10 +369,7 @@
 
         const img = zombieImages[z.imgIndex];
         if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, z.x, z.y, z.w, z.h);
-        } else {
-          ctx.fillStyle = z.fallbackColor;
-          ctx.fillRect(z.x, z.y, z.w, z.h);
+          drawImageWithoutWhite(img, z.x, z.y, z.w, z.h);
         }
       });
     }
@@ -386,7 +381,7 @@
       ctx.beginPath(); ctx.arc(targetCrosshair.x, targetCrosshair.y, 15, 0, Math.PI * 2); ctx.stroke();
     }
 
-    // ฟังก์ชันคำนวณพิกัดการสัมผัส/คลิกให้แม่นยำทุกขนาดจอ (Scale Factor Calculation)
+    // รองรับทั้ง Mouse, iPad และ Touch Screen มือถือ
     function handlePointer(e) {
       if (isQuizActive) return;
       e.preventDefault();
@@ -424,9 +419,13 @@
       });
     }
 
-    // รองรับทั้ง Mouse และ Touch Screen มือถือ
-    canvas.addEventListener('touchstart', handlePointer, { passive: false });
-    canvas.addEventListener('mousedown', handlePointer);
+    // ใช้ pointerdown ตัวเดียวรองรับ Mouse, Touch screen บนมือถือ และ iPad (Apple Pencil)
+    canvas.addEventListener('pointerdown', handlePointer);
+    
+    // ป้องกันการเลื่อนหน้าจอเมื่อสัมผัส Canvas บนมือถือ/iPad
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
 
     function gameLoop() {
       ctx.clearRect(0, 0, W, H);
