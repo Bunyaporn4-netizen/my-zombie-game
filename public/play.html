@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Zombie Quiz Game</title>
   <style>
     * { 
@@ -11,61 +11,56 @@
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
-    }
-    body {
-      font-family: 'Kanit', sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       margin: 0;
-      padding: 5px;
-      overflow: hidden;
+      padding: 0;
     }
     
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+      font-family: 'Kanit', sans-serif;
+      color: #ffffff;
+    }
+    
+    /* คอนเทนเนอร์หลักเต็มจอ 100% */
     #gameContainer {
       position: relative;
-      width: 100%;
-      max-width: 800px;
-      aspect-ratio: 4 / 3;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      background-color: #1e1e1e;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      background-color: #121212;
     }
     
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
+    /* Canvas ขยายเต็มพื้นที่ส่วนกลางที่เหลือ */
+    #gameCanvas {
+      flex: 1;
       width: 100%;
       height: 100%;
-      z-index: 1;
+      display: block;
+      background-color: #1e1e1e;
     }
 
-    /* แถบด้านบน (Top Banner) */
+    /* แถบด้านบน (Top Banner) ชิดขอบบนสุด */
     #topBanner {
       position: relative;
-      z-index: 5;
+      z-index: 10;
       width: 100%;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 100%);
-      padding: 10px 16px;
+      background: rgba(18, 18, 18, 0.95);
+      padding: 12px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 2px solid rgba(0, 255, 136, 0.3);
-      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
 
     .user-info {
-      font-size: 16px;
+      font-size: 1.1rem;
       font-weight: bold;
       color: #ffffff;
       display: flex;
@@ -75,37 +70,37 @@
 
     .zombie-count {
       background: rgba(0, 255, 136, 0.15);
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 0.95rem;
       font-weight: bold;
       color: #00ff88;
       border: 1px solid #00ff88;
     }
 
-    /* แถบด้านล่าง (Bottom Banner) */
+    /* แถบด้านล่าง (Bottom Banner) ชิดขอบล่างสุด */
     #bottomBanner {
       position: relative;
-      z-index: 5;
+      z-index: 10;
       width: 100%;
-      background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 100%);
-      padding: 10px 16px;
+      background: rgba(18, 18, 18, 0.95);
+      padding: 12px 20px;
       display: flex;
       justify-content: center;
       align-items: center;
       border-top: 2px solid rgba(255, 187, 0, 0.3);
-      backdrop-filter: blur(4px);
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
     }
 
     .score-board {
       background: rgba(255, 187, 0, 0.15);
-      padding: 6px 20px;
-      border-radius: 20px;
-      font-size: 18px;
+      padding: 8px 24px;
+      border-radius: 25px;
+      font-size: 1.2rem;
       font-weight: bold;
       color: #ffbb00;
       border: 1px solid #ffbb00;
-      box-shadow: 0 0 10px rgba(255, 187, 0, 0.3);
+      box-shadow: 0 0 12px rgba(255, 187, 0, 0.3);
     }
 
     /* Modal หน้าแรกสุด: กรอกชื่อ */
@@ -118,35 +113,35 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 30;
+      z-index: 40;
       padding: 20px;
     }
 
     .input-box {
       background: #1e1e1e;
       border: 2px solid #00ff88;
-      padding: 24px;
+      padding: 28px;
       border-radius: 16px;
       text-align: center;
       width: 90%;
-      max-width: 380px;
-      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+      max-width: 400px;
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
     }
 
     .input-box h2 {
-      margin-top: 0;
+      margin-bottom: 8px;
       color: #00ff88;
     }
 
     .input-box input {
       width: 100%;
-      padding: 12px;
-      margin: 15px 0;
+      padding: 14px;
+      margin: 18px 0;
       border-radius: 8px;
       border: 1px solid #444;
       background: #2a2a2a;
       color: #fff;
-      font-size: 16px;
+      font-size: 1rem;
       text-align: center;
       outline: none;
     }
@@ -165,11 +160,11 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 20;
+      z-index: 30;
     }
 
     .btn-main {
-      padding: 14px 32px;
+      padding: 14px 36px;
       font-size: 1.3rem;
       font-weight: bold;
       color: #ffffff;
@@ -218,14 +213,14 @@
       backdrop-filter: blur(5px);
       justify-content: center;
       align-items: center;
-      z-index: 25;
+      z-index: 35;
       padding: 15px;
     }
     
     .modal-content {
       background-color: #1e1e1e;
       border-radius: 12px;
-      padding: 16px;
+      padding: 20px;
       width: 95%;
       max-width: 480px;
       max-height: 85vh;
@@ -239,15 +234,15 @@
       background-color: #3700b3;
       color: white;
       border: none;
-      padding: 10px 14px;
-      margin: 6px 0;
+      padding: 12px 16px;
+      margin: 8px 0;
       width: 100%;
       border-radius: 8px;
-      font-size: 0.88rem;
+      font-size: 0.95rem;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
       text-align: left;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
     .btn-option:active {
@@ -283,7 +278,7 @@
       <div class="zombie-count">🧟 จัดการ: <span id="zombieCount">0</span> / 20</div>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
 
     <div id="bottomBanner">
       <div class="score-board">⭐ คะแนน: <span id="scoreText">0</span></div>
@@ -326,8 +321,18 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    const W = 800;
-    const H = 600;
+    let W = 800;
+    let H = 600;
+
+    // ระบบปรับขนาด Canvas ให้รองรับทุกหน้าจอ
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      W = canvas.width;
+      H = canvas.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
 
     let audioCtx = null;
     let playerName = "";
@@ -342,7 +347,7 @@
     };
 
     audioElements.start.loop = true;
-    audioElements.start.volume = 0.8;
+    audioElements.start.volume = 0.3;
     audioElements.quiz.loop = true;
     audioElements.quiz.volume = 0.5;
 
@@ -370,7 +375,6 @@
       }
     }
 
-    // ยืนยันการกรอกชื่อ
     function submitPlayerName() {
       const input = document.getElementById('playerNameInput').value.trim();
       if (!input) {
@@ -456,14 +460,18 @@
       zombies.push(getRandomZombie(lanes[Math.floor(Math.random() * lanes.length)], 0));
     }
 
-    let zombies = [
-      getRandomZombie(H * 0.46, 0),
-      getRandomZombie(H * 0.58, 80),
-      getRandomZombie(H * 0.58, 300),
-      getRandomZombie(H * 0.70, 0),
-      getRandomZombie(H * 0.70, 220),
-      getRandomZombie(H * 0.80, 150)
-    ];
+    let zombies = [];
+
+    function initZombies() {
+      zombies = [
+        getRandomZombie(H * 0.46, 0),
+        getRandomZombie(H * 0.58, 80),
+        getRandomZombie(H * 0.58, 300),
+        getRandomZombie(H * 0.70, 0),
+        getRandomZombie(H * 0.70, 220),
+        getRandomZombie(H * 0.80, 150)
+      ];
+    }
 
     function initAndStartCinematic() {
       if (!audioCtx) {
@@ -620,11 +628,8 @@
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-      const scaleX = W / rect.width;
-      const scaleY = H / rect.height;
-
-      const clickX = (clientX - rect.left) * scaleX;
-      const clickY = (clientY - rect.top) * scaleY;
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
 
       targetCrosshair = { x: clickX, y: clickY };
 
@@ -672,14 +677,12 @@
           createExplosion(b.tx, b.ty);
 
           if (b.hit) {
-            // ยิงโดนตัวซอมบี้: +5 คะแนน
             score += 5;
             updateScoreDisplay();
 
             b.hit.alive = false;
             setTimeout(showQuiz, 200);
           } else {
-            // ยิงพลาด (ไม่โดนตัว): -1 คะแนน (คะแนนไม่ติดลบ)
             score = Math.max(0, score - 1);
             updateScoreDisplay();
           }
@@ -788,6 +791,9 @@
       }
     }
 
+    // เริ่มต้นระบบปรับขนาด Canvas และเริ่มเกม Loop
+    resizeCanvas();
+    initZombies();
     gameLoop();
   </script>
 </body>
