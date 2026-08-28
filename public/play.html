@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Zombie Quiz Game - Cross Platform</title>
+  <title>Zombie Quiz Game - Clean Version</title>
   <style>
     * { 
       box-sizing: border-box; 
-      touch-action: none; /* ป้องกันการสไลด์/ซูมหน้าจอขณะกดเล่นบน iPad และมือถือ */
-      -webkit-touch-callout: none; /* ป้องกันป๊อปอัปขึ้นเวลาแตะค้างบน iOS */
-      -webkit-user-select: none;   /* ป้องกันการคลุมดำเลือกข้อความ */
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
       user-select: none;
     }
     body {
@@ -26,12 +26,11 @@
       overflow: hidden;
     }
     
-    /* กรอบเกมปรับตามหน้าจออัตโนมัติ (มือถือ/iPad/คอม) */
     #gameContainer {
       position: relative;
       width: 100%;
       max-width: 800px;
-      aspect-ratio: 4 / 3; /* อัตราส่วน 4:3 ให้พอดีกับ Canvas 800x600 */
+      aspect-ratio: 4 / 3;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -59,7 +58,6 @@
       z-index: 5;
     }
 
-    /* ป๊อปอัปคำถาม */
     .modal {
       display: none;
       position: absolute;
@@ -190,11 +188,14 @@
       { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
     ];
 
+    // โหลดรูปภาพตรงๆ ไม่ผ่านการแต่งภาพใน JS
     const zombieImages = [new Image(), new Image(), new Image(), new Image()];
-    zombieImages[0].src = '/images/zombie1.png';
-    zombieImages[1].src = '/images/zombie2.png';
-    zombieImages[2].src = '/images/zombie3.png';
-    zombieImages[3].src = '/images/zombie4.png';
+    zombieImages.forEach((img, i) => {
+      img.onerror = () => {
+        console.warn(`โหลดรูป /images/zombie${i+1}.png ไม่สำเร็จ จะใช้วงกลมแทนชั่วคราว`);
+      };
+      img.src = `/images/zombie${i+1}.png`;
+    });
 
     let targetCrosshair = null;
     let isQuizActive = false;
@@ -217,44 +218,6 @@
       { imgIndex: 2, w: 105, h: 120, speed: 5.5 },
       { imgIndex: 3, w: 80, h: 105, speed: 5.5 }
     ];
-
-        // ฟังก์ชันตัดสีขาวออกล่วงหน้าแค่นับครั้งเดียวตอนเริ่มเกม
-    function removeWhiteBackground(img, callback) {
-    img.onload = () => {
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = img.naturalWidth;
-        offCanvas.height = img.naturalHeight;
-        const offCtx = offCanvas.getContext('2d');
-
-        offCtx.drawImage(img, 0, 0);
-        const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-        const data = imgData.data;
-
-        for (let i = 0; i < data.length; i += 4) {
-        if (data[i] > 230 && data[i + 1] > 230 && data[i + 2] > 230) {
-            data[i + 3] = 0; // ปรับให้โปร่งใส
-        }
-        }
-
-        offCtx.putImageData(imgData, 0, 0);
-
-        const processedImg = new Image();
-        processedImg.src = offCanvas.toDataURL();
-        processedImg.onload = () => callback(processedImg);
-    };
-    }
-
-    // โหลดและตัดสีขาวรูปซอมบี้ล่วงหน้า
-    const zombieImages = [];
-    const rawSources = ['/images/zombie1.png', '/images/zombie2.png', '/images/zombie3.png', '/images/zombie4.png'];
-
-    rawSources.forEach((src, index) => {
-    const rawImg = new Image();
-    rawImg.src = src;
-    removeWhiteBackground(rawImg, (cleanImg) => {
-        zombieImages[index] = cleanImg;
-    });
-    });
 
     function getRandomZombie(laneY, extraDelay = 0) {
       const spec = zombieSpecs[Math.floor(Math.random() * zombieSpecs.length)];
@@ -369,48 +332,27 @@
       }
     }
 
-    // ฟังก์ชันลบสีขาวออกจากรูปภาพก่อนแสดงผล
-    function drawImageWithoutWhite(img, x, y, w, h) {
-      if (!img.complete || img.naturalWidth === 0) return;
-
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = img.naturalWidth;
-      offCanvas.height = img.naturalHeight;
-      const offCtx = offCanvas.getContext('2d');
-      
-      offCtx.drawImage(img, 0, 0);
-      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-      const data = imgData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        if (r > 230 && g > 230 && b > 230) {
-          data[i + 3] = 0;
-        }
-      }
-      
-      offCtx.putImageData(imgData, 0, 0);
-      ctx.drawImage(offCanvas, x, y, w, h);
-    }
-
     function drawZombies() {
       zombies.forEach((z, idx) => {
         if (!z.alive) return;
         z.x -= z.speed;
 
         if (z.x < -100) {
-        zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
-        return;
+          zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
+          return;
         }
 
         const img = zombieImages[z.imgIndex];
-        // วาดรูปธรรมดาได้เลย เพราะรูปถูกตัดสีขาวเรียบร้อยแล้วตั้งแต่นำเข้า
-        if (img && img.complete) {
-        ctx.drawImage(img, z.x, z.y, z.w, z.h);
+        // วาดรูปโดยตรงหากโหลดรูปสำเร็จ ถ้าภาพหลุดให้วาดตัวสำรองเพื่อไม่ให้จอดำ
+        if (img && img.complete && img.naturalWidth !== 0) {
+          ctx.drawImage(img, z.x, z.y, z.w, z.h);
+        } else {
+          ctx.fillStyle = '#2ed573';
+          ctx.beginPath();
+          ctx.arc(z.x + z.w / 2, z.y + z.h / 2, z.w / 3, 0, Math.PI * 2);
+          ctx.fill();
         }
-    });
+      });
     }
 
     function drawCrosshair() {
@@ -420,7 +362,6 @@
       ctx.beginPath(); ctx.arc(targetCrosshair.x, targetCrosshair.y, 15, 0, Math.PI * 2); ctx.stroke();
     }
 
-    // รองรับทั้ง Mouse, iPad และ Touch Screen มือถือ
     function handlePointer(e) {
       if (isQuizActive) return;
       e.preventDefault();
@@ -458,13 +399,8 @@
       });
     }
 
-    // ใช้ pointerdown ตัวเดียวรองรับ Mouse, Touch screen บนมือถือ และ iPad (Apple Pencil)
     canvas.addEventListener('pointerdown', handlePointer);
-    
-    // ป้องกันการเลื่อนหน้าจอเมื่อสัมผัส Canvas บนมือถือ/iPad
-    canvas.addEventListener('touchmove', function(e) {
-      e.preventDefault();
-    }, { passive: false });
+    canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
 
     function gameLoop() {
       ctx.clearRect(0, 0, W, H);
