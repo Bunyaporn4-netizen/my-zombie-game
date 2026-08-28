@@ -89,7 +89,7 @@
       transform: scale(0.95);
     }
 
-    /* สไตล์ข้อความ ARE YOU READY? + Animation สั่นแบบเบาๆ */
+    /* สไตล์ข้อความ ARE YOU READY? + Animation สั่นเบาๆ */
     #startCountdownText {
       display: none;
       font-size: 52px;
@@ -107,10 +107,9 @@
     #startCountdownText.show {
       opacity: 1;
       display: block;
-      animation: subtleShakeEffect 0.15s infinite alternate; /* สั่นเบาๆ นุ่มนวล */
+      animation: subtleShakeEffect 0.15s infinite alternate;
     }
 
-    /* Keyframes สำหรับเอฟเฟกต์สั่นเบาๆ */
     @keyframes subtleShakeEffect {
       0% { transform: scale(1.02) translate(0, 0); }
       25% { transform: scale(1.02) translate(-1px, 1px); }
@@ -224,28 +223,48 @@
 
     let audioCtx = null;
 
+    // ระบบเพลงและ Audio Elements
     const audioElements = {
       ready: new Audio('audio/ready.mp3'),
-      start: new Audio('audio/start.mp3'),
-      shoot: new Audio('audio/shoot.mp3'),
-      quiz: new Audio('audio/quiz.mp3')
+      start: new Audio('audio/start.mp3'), // เพลงหลักเล่นวนลูป (Loop BGM)
+      shoot: new Audio('audio/shoot.mp3'), // เสียงยิงปืน
+      quiz: new Audio('audio/quiz.mp3')    // เพลงในหน้าสรุปผลลัพธ์
     };
+
+    // ตั้งค่าให้เพลง start.mp3 เล่นแบบ Loop
+    audioElements.start.loop = true;
+    audioElements.start.volume = 0.5;
+
+    // ตั้งค่าให้เพลง quiz.mp3 เล่นแบบ Loop
+    audioElements.quiz.loop = true;
+    audioElements.quiz.volume = 0.5;
 
     Object.values(audioElements).forEach(audio => {
       audio.preload = 'auto';
     });
 
-    const bgm = new Audio('audio/bgm.mp3');
-    bgm.loop = true;
-    bgm.volume = 0.4;
-
     function playSound(key) {
       const audio = audioElements[key];
       if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(e => console.warn("Audio play blocked:", e));
+        if (key === 'shoot') {
+          // เล่นเสียงยิงปืนแบบ Clone เพื่อให้ยิงรัวได้โดยเสียงไม่สะดุด
+          const shootClone = audio.cloneNode();
+          shootClone.volume = 0.6;
+          shootClone.play().catch(e => console.warn(e));
+        } else {
+          audio.currentTime = 0;
+          audio.play().catch(e => console.warn("Audio play blocked:", e));
+        }
       }
       return audio;
+    }
+
+    function stopSound(key) {
+      const audio = audioElements[key];
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
     }
 
     let gameStarted = false;
@@ -330,7 +349,7 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- เริ่มต้นเกมแบบซิงค์เวลาเป๊ะเท่าความยาวไฟล์เสียง ---
+    // --- เริ่มต้นเกม + เล่นเพลง start.mp3 ทันที ---
     function initAndStartCinematic() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -339,27 +358,23 @@
         audioCtx.resume();
       }
 
-      // ซ่อนปุ่มกด
       document.getElementById('btnStartGame').style.display = 'none';
 
-      // แสดงข้อความ ARE YOU READY? (สั่นเบากว่าเดิม)
+      // เล่นเพลง start.mp3 ทันทีเมื่อผู้ใช้กดปุ่ม (แก้ปัญหา Autoplay)
+      playSound('start');
+
       const el = document.getElementById('startCountdownText');
       el.classList.add('show');
 
-      // เล่นเสียง ready.mp3
       const audioReady = playSound('ready');
 
       const startGameAction = () => {
-        playSound('start');
         document.getElementById('startCountdownModal').style.display = 'none';
         gameStarted = true;
       };
 
       if (audioReady) {
-        // เมื่อเสียงเล่นจบเป๊ะ ให้เข้าเกมทันที
         audioReady.onended = startGameAction;
-
-        // คำนวณเวลาถอยหลังเผื่อกรณี Event ไม่ทำงาน ให้ตรงกับ audio.duration
         const durationMs = (audioReady.duration && !isNaN(audioReady.duration)) ? audioReady.duration * 1000 : 1800;
         setTimeout(() => {
           if (!gameStarted) startGameAction();
@@ -561,7 +576,6 @@
 
     function showQuiz() {
       isQuizActive = true;
-      playSound('quiz');
 
       const q = questions[currentQuestionIndex];
       document.getElementById('question-title').innerText = q.title;
@@ -595,8 +609,16 @@
       }
     }
 
+    // --- สรุปผลตอบครบ 20 ข้อ: ปิด start.mp3 แล้วเปิด quiz.mp3 ---
     function finishGame() {
       isQuizActive = true;
+
+      // ปิดเพลงหลักระหว่างเล่นเกม
+      stopSound('start');
+
+      // เปิดเพลง quiz.mp3 ในหน้าสรุปผล
+      playSound('quiz');
+
       document.getElementById('resultModal').style.display = 'flex';
 
       let timeLeft = 10;
@@ -614,9 +636,6 @@
 
     function showFinalResult() {
       document.getElementById('timerText').style.display = 'none';
-
-      bgm.currentTime = 0;
-      bgm.play().catch(err => console.log("Audio play blocked:", err));
 
       const counts = {};
       selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
