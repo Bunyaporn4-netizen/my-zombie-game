@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zombie Quiz Game - Play</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: 'Kanit', sans-serif;
       background-color: #121212;
@@ -15,22 +16,58 @@
       justify-content: center;
       min-height: 100vh;
       margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
+      padding: 0;
+      overflow: hidden;
     }
-    .card {
+    #gameContainer {
+      position: relative;
+      width: 800px;
+      height: 600px;
+    }
+    canvas {
+      border: 3px solid #ff4444;
+      background-color: #1e1e1e;
+      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+      border-radius: 12px;
+    }
+    #hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff88;
+      border: 1px solid #00ff88;
+      pointer-events: none;
+    }
+    .modal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      border-radius: 12px;
+    }
+    .modal-content {
       background-color: #1e1e1e;
       border-radius: 12px;
       padding: 24px;
-      width: 100%;
-      max-width: 480px;
+      width: 90%;
+      max-width: 500px;
       box-shadow: 0 8px 16px rgba(0,0,0,0.5);
       text-align: center;
+      border: 2px solid #ff4444;
     }
     h2 {
       margin-top: 0;
       color: #bb86fc;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
     }
     .btn-option {
       background-color: #3700b3;
@@ -43,6 +80,7 @@
       font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
+      text-align: left;
     }
     .btn-option:hover {
       background-color: #6200ee;
@@ -72,44 +110,104 @@
       border-bottom: 1px solid #333;
     }
     .hidden {
-      display: none;
+      display: none !important;
     }
   </style>
 </head>
 <body>
 
-  <div class="card" id="quiz-card">
-    <h2 id="question-title">รอเริ่มเกม...</h2>
-    <div id="options-container"></div>
-    <div id="result-box" class="hidden"></div>
-  </div>
+  <div id="gameContainer">
+    <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-  <div class="card hidden" id="final-card">
-    <h2>สรุปผลอันดับคำตอบยอดนิยม</h2>
-    <div id="ranking-container"></div>
+    <!-- ป๊อปอัปคำถาม -->
+    <div id="quizModal" class="modal">
+      <div class="modal-content">
+        <h2 id="question-title">รอเริ่มเกม...</h2>
+        <div id="options-container"></div>
+        <div id="result-box" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- ป๊อปอัปสรุปผลลัพธ์เมื่อครบ 20 ข้อ -->
+    <div id="finalModal" class="modal">
+      <div class="modal-content">
+        <h2>สรุปผลอันดับคำตอบยอดนิยม</h2>
+        <div id="ranking-container"></div>
+      </div>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
     const questionTitle = document.getElementById('question-title');
     const optionsContainer = document.getElementById('options-container');
     const resultBox = document.getElementById('result-box');
-    const quizCard = document.getElementById('quiz-card');
-    const finalCard = document.getElementById('final-card');
+    const quizModal = document.getElementById('quizModal');
+    const finalModal = document.getElementById('finalModal');
     const rankingContainer = document.getElementById('ranking-container');
 
-    // 1. รับคำถามข้อถัดไป
+    let currentQuestionData = null;
+    let answeredCount = 0;
+    let isQuizActive = false;
+
+    // ตัวละคร และ ซอมบี้
+    const player = { x: 400, y: 500, size: 20, speed: 5, color: '#00ff88' };
+    let bullets = [];
+    let currentZombie = null;
+
+    const keys = {};
+    let mousePos = { x: 0, y: 0 };
+
+    window.addEventListener('keydown', e => keys[e.key] = true);
+    window.addEventListener('keyup', e => keys[e.key] = false);
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.x = e.clientX - rect.left;
+      mousePos.y = e.clientY - rect.top;
+    });
+
+    canvas.addEventListener('click', () => {
+      if (!isQuizActive && answeredCount < 20) {
+        const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+        bullets.push({
+          x: player.x,
+          y: player.y,
+          vx: Math.cos(angle) * 10,
+          vy: Math.sin(angle) * 10
+        });
+      }
+    });
+
+    function spawnZombie() {
+      if (answeredCount < 20) {
+        currentZombie = {
+          x: Math.random() * (canvas.width - 100) + 50,
+          y: Math.random() * (canvas.height / 2) + 50,
+          size: 25,
+          color: '#ff4444'
+        };
+      } else {
+        currentZombie = null;
+      }
+    }
+
+    spawnZombie();
+
+    // 1. รับคำถามจาก Server
     socket.on('newQuestion', (question) => {
-      // รีเซ็ตหน้าจอคำตอบ
+      currentQuestionData = question;
       resultBox.classList.add('hidden');
       resultBox.innerText = '';
       optionsContainer.innerHTML = '';
       
       questionTitle.innerText = question.title;
 
-      // สร้างปุ่มตัวเลือก
       question.options.forEach((opt, index) => {
         const btn = document.createElement('button');
         btn.className = 'btn-option';
@@ -119,29 +217,44 @@
       });
     });
 
-    // 2. ส่งคำตอบเมื่อผู้เล่นกดเลือก
+    // 2. เมื่อยิงซอมบี้โดน ให้เปิด Pop-up คำถาม
+    function showQuiz() {
+      isQuizActive = true;
+      quizModal.style.display = 'flex';
+    }
+
+    // 3. เมื่อกดเลือกคำตอบ
     function selectOption(index) {
-      // ปิดใช้งานปุ่มทั้งหมดชั่วคราวหลังกด
       const buttons = document.querySelectorAll('.btn-option');
       buttons.forEach(btn => btn.disabled = true);
 
-      // ส่งตัวเลือกไปหา Server
       socket.emit('submitAnswer', { optionIndex: index });
     }
 
-    // 3. รับผลคำแนะนำ (ความเหมาะสม) มาแสดงทันทีหลังตอบ
+    // 4. รับผลลัพธ์ย่อยหลังตอบ
     socket.on('answerResult', (data) => {
       resultBox.innerText = '💡 ' + data.fitFor;
       resultBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        quizModal.style.display = 'none';
+        isQuizActive = false;
+        answeredCount++;
+        document.getElementById('zombieCount').innerText = answeredCount;
+
+        if (answeredCount < 20) {
+          spawnZombie();
+        }
+      }, 1500);
     });
 
-    // 4. รับผลสรุปจัดอันดับเมื่อครบ 20 ข้อ
+    // 5. รับผลสรุปจัดอันดับเมื่อครบ 20 ข้อ
     socket.on('showFinalRanking', (stats) => {
-      quizCard.classList.add('hidden');
-      finalCard.classList.remove('hidden');
+      isQuizActive = true;
+      quizModal.style.display = 'none';
+      finalModal.style.display = 'flex';
       rankingContainer.innerHTML = '';
 
-      // เรียงลำดับตัวเลือกที่มีคนกดมากที่สุดไปน้อยที่สุด
       const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
 
       sortedStats.forEach(([optionText, count], rank) => {
@@ -151,6 +264,82 @@
         rankingContainer.appendChild(item);
       });
     });
+
+    // Loop วาดกราฟิกเกม
+    function update() {
+      if (isQuizActive) return;
+
+      if ((keys['ArrowUp'] || keys['w']) && player.y > player.size) player.y -= player.speed;
+      if ((keys['ArrowDown'] || keys['s']) && player.y < canvas.height - player.size) player.y += player.speed;
+      if ((keys['ArrowLeft'] || keys['a']) && player.x > player.size) player.x -= player.speed;
+      if ((keys['ArrowRight'] || keys['d']) && player.x < canvas.width - player.size) player.x += player.speed;
+
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+
+        if (currentZombie) {
+          const dist = Math.hypot(b.x - currentZombie.x, b.y - currentZombie.y);
+          if (dist < currentZombie.size) {
+            bullets.splice(i, 1);
+            showQuiz();
+            break;
+          }
+        }
+
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+          bullets.splice(i, 1);
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // วาดตัวละคร
+      ctx.fillStyle = player.color;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // เส้นเป้าเล็ง
+      ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)';
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      ctx.lineTo(mousePos.x, mousePos.y);
+      ctx.stroke();
+
+      // กระสุน
+      ctx.fillStyle = '#ffff00';
+      bullets.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // ซอมบี้
+      if (currentZombie) {
+        ctx.fillStyle = currentZombie.color;
+        ctx.beginPath();
+        ctx.arc(currentZombie.x, currentZombie.y, currentZombie.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(currentZombie.x - 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
+        ctx.arc(currentZombie.x + 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 </body>
 </html>
