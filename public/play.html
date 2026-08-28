@@ -233,7 +233,7 @@
 
     // ตั้งค่าให้เพลง start.mp3 เล่นแบบ Loop
     audioElements.start.loop = true;
-    audioElements.start.volume = 0.5;
+    audioElements.start.volume = 0.8;
 
     // ตั้งค่าให้เพลง quiz.mp3 เล่นแบบ Loop
     audioElements.quiz.loop = true;
@@ -249,7 +249,7 @@
         if (key === 'shoot') {
           // เล่นเสียงยิงปืนแบบ Clone เพื่อให้ยิงรัวได้โดยเสียงไม่สะดุด
           const shootClone = audio.cloneNode();
-          shootClone.volume = 0.6;
+          shootClone.volume = 0.5;
           shootClone.play().catch(e => console.warn(e));
         } else {
           audio.currentTime = 0;
