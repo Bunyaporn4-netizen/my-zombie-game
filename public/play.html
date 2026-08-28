@@ -32,34 +32,84 @@
       max-width: 800px;
       aspect-ratio: 4 / 3;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: space-between;
       align-items: center;
+      background-color: #1e1e1e;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
     
     canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      background-color: #1e1e1e;
-      border-radius: 12px;
+      z-index: 1;
     }
 
-    #hud {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.75);
-      padding: 8px 14px;
+    /* แถบด้านบน (Top Banner) */
+    #topBanner {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 100%);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    .user-info {
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zombie-count {
+      background: rgba(0, 255, 136, 0.15);
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 14px;
       font-weight: bold;
       color: #00ff88;
       border: 1px solid #00ff88;
-      pointer-events: none;
-      z-index: 5;
     }
 
-    /* Modal หน้าแรก */
-    #startCountdownModal {
+    /* แถบด้านล่าง (Bottom Banner) */
+    #bottomBanner {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 100%);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-top: 2px solid rgba(255, 187, 0, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    .score-board {
+      background: rgba(255, 187, 0, 0.15);
+      padding: 6px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffbb00;
+      border: 1px solid #ffbb00;
+      box-shadow: 0 0 10px rgba(255, 187, 0, 0.3);
+    }
+
+    /* Modal หน้าแรกสุด: กรอกชื่อ */
+    #nameInputModal {
       display: flex;
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -68,13 +118,59 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 20;
-      border-radius: 12px;
+      z-index: 30;
+      padding: 20px;
     }
 
-    #btnStartGame {
+    .input-box {
+      background: #1e1e1e;
+      border: 2px solid #00ff88;
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+      width: 90%;
+      max-width: 380px;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .input-box h2 {
+      margin-top: 0;
+      color: #00ff88;
+    }
+
+    .input-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+    }
+
+    .input-box input:focus {
+      border-color: #00ff88;
+    }
+
+    /* Modal สตาร์ทเกม */
+    #startCountdownModal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .btn-main {
       padding: 14px 32px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: bold;
       color: #ffffff;
       background: linear-gradient(135deg, #ff4757, #ff6b81);
@@ -85,22 +181,20 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    #btnStartGame:active {
+    .btn-main:active {
       transform: scale(0.95);
     }
 
-    /* สไตล์ข้อความ ARE YOU READY? + Animation สั่นเบาๆ */
     #startCountdownText {
       display: none;
-      font-size: 52px;
+      font-size: 48px;
       font-weight: 900;
       color: #ffffff;
       text-align: center;
       letter-spacing: 3px;
       text-transform: uppercase;
-      text-shadow: 0 0 15px #ffffff, 0 0 35px rgba(0, 255, 136, 0.9), 0 0 50px rgba(0, 255, 136, 0.6);
+      text-shadow: 0 0 15px #ffffff, 0 0 35px rgba(0, 255, 136, 0.9);
       opacity: 0;
-      transform: scale(0.8);
       transition: opacity 0.2s ease-in-out;
     }
 
@@ -112,10 +206,8 @@
 
     @keyframes subtleShakeEffect {
       0% { transform: scale(1.02) translate(0, 0); }
-      25% { transform: scale(1.02) translate(-1px, 1px); }
       50% { transform: scale(1.02) translate(1px, -1px); }
-      75% { transform: scale(1.02) translate(-1px, -1px); }
-      100% { transform: scale(1.02) translate(1px, 1px); }
+      100% { transform: scale(1.02) translate(-1px, 1px); }
     }
 
     .modal {
@@ -126,8 +218,7 @@
       backdrop-filter: blur(5px);
       justify-content: center;
       align-items: center;
-      z-index: 10;
-      border-radius: 12px;
+      z-index: 25;
       padding: 15px;
     }
     
@@ -187,11 +278,28 @@
 <body>
 
   <div id="gameContainer">
-    <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
+    <div id="topBanner">
+      <div class="user-info">👤 ผู้เล่น: <span id="displayName">ยังไม่ระบุ</span></div>
+      <div class="zombie-count">🧟 จัดการ: <span id="zombieCount">0</span> / 20</div>
+    </div>
+
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
+    <div id="bottomBanner">
+      <div class="score-board">⭐ คะแนน: <span id="scoreText">0</span></div>
+    </div>
+
+    <div id="nameInputModal">
+      <div class="input-box">
+        <h2>🎮 ต้อนรับผู้ลุยซอมบี้</h2>
+        <p style="font-size: 0.9rem; color: #aaa;">กรุณากรอกชื่อ-นามสกุลก่อนเข้าสู่เกม</p>
+        <input type="text" id="playerNameInput" placeholder="ระบุชื่อ - นามสกุลของคุณ" maxlength="40">
+        <button class="btn-main" onclick="submitPlayerName()">ตกลง</button>
+      </div>
+    </div>
+
     <div id="startCountdownModal">
-      <button id="btnStartGame" onclick="initAndStartCinematic()">TAP TO START</button>
+      <button id="btnStartGame" class="btn-main" onclick="initAndStartCinematic()">TAP TO START</button>
       <div id="startCountdownText">ARE YOU READY?</div>
     </div>
 
@@ -222,38 +330,33 @@
     const H = 600;
 
     let audioCtx = null;
+    let playerName = "";
+    let score = 0;
 
-    // ระบบเพลงและ Audio Elements
+    // ระบบเสียง
     const audioElements = {
       ready: new Audio('audio/ready.mp3'),
-      start: new Audio('audio/start.mp3'), // เพลงหลักเล่นวนลูป (Loop BGM)
-      shoot: new Audio('audio/shoot.mp3'), // เสียงยิงปืน
-      quiz: new Audio('audio/quiz.mp3')    // เพลงในหน้าสรุปผลลัพธ์
+      start: new Audio('audio/start.mp3'),
+      shoot: new Audio('audio/shoot.mp3'),
+      quiz: new Audio('audio/quiz.mp3')
     };
 
-    // ตั้งค่าให้เพลง start.mp3 เล่นแบบ Loop
     audioElements.start.loop = true;
     audioElements.start.volume = 0.8;
-
-    // ตั้งค่าให้เพลง quiz.mp3 เล่นแบบ Loop
     audioElements.quiz.loop = true;
     audioElements.quiz.volume = 0.5;
-
-    Object.values(audioElements).forEach(audio => {
-      audio.preload = 'auto';
-    });
 
     function playSound(key) {
       const audio = audioElements[key];
       if (audio) {
         if (key === 'shoot') {
-          // เล่นเสียงยิงปืนแบบ Clone เพื่อให้ยิงรัวได้โดยเสียงไม่สะดุด
           const shootClone = audio.cloneNode();
           shootClone.volume = 0.5;
+          shootClone.currentTime = 0;
           shootClone.play().catch(e => console.warn(e));
         } else {
           audio.currentTime = 0;
-          audio.play().catch(e => console.warn("Audio play blocked:", e));
+          audio.play().catch(e => console.warn(e));
         }
       }
       return audio;
@@ -265,6 +368,19 @@
         audio.pause();
         audio.currentTime = 0;
       }
+    }
+
+    // ยืนยันการกรอกชื่อ
+    function submitPlayerName() {
+      const input = document.getElementById('playerNameInput').value.trim();
+      if (!input) {
+        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
+        return;
+      }
+      playerName = input;
+      document.getElementById('displayName').innerText = playerName;
+      document.getElementById('nameInputModal').style.display = 'none';
+      document.getElementById('startCountdownModal').style.display = 'flex';
     }
 
     let gameStarted = false;
@@ -349,7 +465,6 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- เริ่มต้นเกม + เล่นเพลง start.mp3 ทันที ---
     function initAndStartCinematic() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -359,8 +474,6 @@
       }
 
       document.getElementById('btnStartGame').style.display = 'none';
-
-      // เล่นเพลง start.mp3 ทันทีเมื่อผู้ใช้กดปุ่ม (แก้ปัญหา Autoplay)
       playSound('start');
 
       const el = document.getElementById('startCountdownText');
@@ -493,6 +606,10 @@
       ctx.beginPath(); ctx.arc(targetCrosshair.x, targetCrosshair.y, 15, 0, Math.PI * 2); ctx.stroke();
     }
 
+    function updateScoreDisplay() {
+      document.getElementById('scoreText').innerText = score;
+    }
+
     function handlePointer(e) {
       if (!gameStarted || isQuizActive) return;
       e.preventDefault();
@@ -555,8 +672,16 @@
           createExplosion(b.tx, b.ty);
 
           if (b.hit) {
+            // ยิงโดนตัวซอมบี้: +5 คะแนน
+            score += 5;
+            updateScoreDisplay();
+
             b.hit.alive = false;
             setTimeout(showQuiz, 200);
+          } else {
+            // ยิงพลาด (ไม่โดนตัว): -1 คะแนน (คะแนนไม่ติดลบ)
+            score = Math.max(0, score - 1);
+            updateScoreDisplay();
           }
         }
       });
@@ -609,14 +734,10 @@
       }
     }
 
-    // --- สรุปผลตอบครบ 20 ข้อ: ปิด start.mp3 แล้วเปิด quiz.mp3 ---
     function finishGame() {
       isQuizActive = true;
 
-      // ปิดเพลงหลักระหว่างเล่นเกม
       stopSound('start');
-
-      // เปิดเพลง quiz.mp3 ในหน้าสรุปผล
       playSound('quiz');
 
       document.getElementById('resultModal').style.display = 'flex';
@@ -653,10 +774,18 @@
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
         <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 ไลฟ์สไตล์ที่เหมาะสมกับคุณคือ: ${topType}</h3>
-        <p style="margin-bottom:0; font-size:0.9rem;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
+        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
+        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
       `;
 
-      if (socket) socket.emit('submitAnswer', { optionText: topType });
+      if (socket) {
+        socket.emit('submitAnswer', { 
+          playerName: playerName,
+          score: score,
+          optionText: topType 
+        });
+      }
     }
 
     gameLoop();
