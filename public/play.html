@@ -1,71 +1,167 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zombie Cannon Career Quiz</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Kanit', sans-serif; }
-        #game-container { position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100%; height: 100%; }
-        
-        .quiz-modal {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
-            flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 100;
-        }
-        .quiz-card {
-            background: linear-gradient(145deg, #1e272e, #0f171e);
-            border: 3px solid #ff4757; border-radius: 20px; padding: 25px; width: 90%; max-width: 420px;
-            text-align: center; color: white; box-shadow: 0 15px 35px rgba(255, 71, 87, 0.3);
-        }
-        .quiz-card h3 { margin-top: 0; font-size: 22px; color: #ffd32a; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .btn {
-            display: block; width: 100%; padding: 14px; margin: 12px 0; font-size: 18px; font-weight: bold; color: white;
-            border: none; border-radius: 12px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
-            box-shadow: 0 5px 0 rgba(0,0,0,0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
-        .b1 { background: linear-gradient(to bottom, #ff5e57, #d63031); }
-        .b2 { background: linear-gradient(to bottom, #0fbcf9, #0984e3); }
-        .b3 { background: linear-gradient(to bottom, #ffa801, #e17055); }
-        .b4 { background: linear-gradient(to bottom, #05c46b, #00b894); }
-        
-        #end-screen { 
-            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            color: #05c46b; text-align: center; z-index: 101; text-shadow: 0 0 20px rgba(5, 196, 107, 0.6);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zombie Quiz Game - Play</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #gameContainer {
+      position: relative;
+      width: 800px;
+      height: 600px;
+    }
+    canvas {
+      border: 3px solid #ff4444;
+      background-color: #1e1e1e;
+      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+      border-radius: 12px;
+    }
+    #hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff88;
+      border: 1px solid #00ff88;
+      pointer-events: none;
+    }
+    /* ป๊อปอัปคำถาม */
+    .modal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      border-radius: 12px;
+    }
+    .modal-content {
+      background-color: #1e1e1e;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      text-align: center;
+      border: 2px solid #ff4444;
+    }
+    h2 {
+      margin-top: 0;
+      color: #bb86fc;
+      font-size: 1.3rem;
+    }
+    .btn-option {
+      background-color: #3700b3;
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      text-align: left;
+    }
+    .btn-option:hover {
+      background-color: #6200ee;
+    }
+    .btn-option:active {
+      transform: scale(0.98);
+    }
+    #timerText {
+      font-size: 48px;
+      color: #ffbb00;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    #result-box {
+      display: none;
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #2c2c2c;
+      border-left: 4px solid #03dac6;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+  </style>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="quiz-modal" class="quiz-modal">
-            <div class="quiz-card">
-                <h3>💥 กำจัดซอมบี้สำเร็จ!<br>เลือกสายการเรียนที่ใช่สำหรับคุณ:</h3>
-                <button class="btn b1" onclick="submitAnswer('วิทย์-คณิต')">🧪 วิทย์-คณิต</button>
-                <button class="btn b2" onclick="submitAnswer('ศิลป์-คำนวณ')">📊 ศิลป์-คำนวณ</button>
-                <button class="btn b3" onclick="submitAnswer('ศิลป์-ภาษา')">🗣️ ศิลป์-ภาษา</button>
-                <button class="btn b4" onclick="submitAnswer('สายอาชีพ')">🛠️ สายอาชีพ</button>
-            </div>
-        </div>
 
-        <div id="end-screen">
-            <h1 style="font-size: 38px; margin-bottom: 5px;">🎉 VICTORY!</h1>
-            <p style="color:white; font-size: 20px;">บันทึกผลการเลือกสายอาชีพเรียบร้อยแล้ว</p>
-        </div>
+  <div id="gameContainer">
+    <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <!-- ป๊อปอัปคำถาม -->
+    <div id="quizModal" class="modal">
+      <div class="modal-content">
+        <h2 id="question-title">กำลังโหลดคำถาม...</h2>
+        <div id="options-container"></div>
+      </div>
     </div>
 
-    <script>
-        let socket;
-        try { socket = io(); } catch(e) {}
+    <!-- ป๊อปอัปสรุปผลลัพธ์ -->
+    <div id="resultModal" class="modal">
+      <div class="modal-content">
+        <h2>🎉 กำลังประมวลผลผลลัพธ์...</h2>
+        <p>กรุณารอสักครู่ ระบบกำลังคำนวณตัวตนของคุณ</p>
+        <div id="timerText">10</div>
+        <div id="result-box"></div>
+      </div>
+    </div>
+  </div>
 
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // รายการคำถาม 20 ข้อ
+    const questions = [
+      { title: "1. วันหยุดสุดสัปดาห์ คุณอยากทำอะไรมากที่สุด?", options: [{ text: "ไปเที่ยวต่างจังหวัด / ตั้งแคมป์", type: "สายลุย ชอบธรรมชาติและการผจญภัย" }, { text: "นอนดูซีรีส์อยู่ห้องชิลๆ", type: "สายสโลว์ไลฟ์ รักความสงบ" }, { text: "ไปเดินห้าง ช้อปปิ้ง หาคาเฟ่เก๋ๆ", type: "สายแฟชั่น ชอบความทันสมัย" }] },
+      { title: "2. เวลาเจอเรื่องเครียด คุณเลือกวิธีไหนในการฮีลใจ?", options: [{ text: "กินของอร่อยๆ ที่ชอบ", type: "นักชิม ใช้ความอร่อยเยียวยา" }, { text: "ออกกำลังกาย / เล่นกีฬา", type: "สายแอคทีฟ ปลดปล่อยพลังงาน" }, { text: "คุยกับเพื่อนสนิท / ระบายให้คนอื่นฟัง", type: "สายเอ็กโทรเวิร์ต รักมิตรภาพ" }] },
+      { title: "3. อาหารมื้อเย็นที่คู่ควรกับคุณคืออะไร?", options: [{ text: "ชาบู / หมูกระทะ", type: "สายปาร์ตี้ ชอบกินจัดเต็ม" }, { text: "สลัด / อาหารคลีนเพื่อสุขภาพ", type: "สายเฮลตี้ ใส่ใจสุขภาพ" }, { text: "อาหารตามสั่งง่ายๆ รวดเร็ว", type: "สายยุทธศาสตร์ เน้นความคล่องตัว" }] },
+      { title: "4. เมื่อต้องทำงานเป็นกลุ่ม คุณมักจะรับบทบาทไหน?", options: [{ text: "ผู้นำ / คนคอยแจกจ่ายงาน", type: "สายลีดเดอร์ ชอบบริหาร" }, { text: "คนคิดไอเดีย / ออกแบบงาน", type: "สายคริเอทีฟ ความคิดสร้างสรรค์สูง" }, { text: "ฝ่ายหาข้อมูล / คอยสนับสนุนเพื่อน", type: "สายซัพพอร์ต ละเอียดรอบคอบ" }] },
+      { title: "5. เครื่องดื่มแก้วโปรดช่วงเช้าของคุณคือ?", options: [{ text: "กาแฟดำ / อเมริกาโน่", type: "สายจริงจัง พร้อมลุยงาน" }, { text: "ชาไข่มุก / นมสดหวานร้อย", type: "สายสดใส เติมความหวาน" }, { text: "น้ำผลไม้สกัด / น้ำเปล่าเย็นๆ", type: "สายรักตัวเอง เน้นความสดชื่น" }] },
+      { title: "6. ถ้าชนะรางวัลใหญ่ คุณจะเอาเงินไปทำอะไรก่อน?", options: [{ text: "ลงทุน / เก็บออมในธนาคาร", type: "สายวางแผนอนาคต มั่นคง" }, { text: "ตั๋วเครื่องบินไปเที่ยวรอบโลก", type: "สายรักอิสระ เปิดโลกทัศน์" }, { text: "ซื้อมือถือใหม่ / ของที่อยากได้", type: "สายรางวัลชีวิต ให้ความสุขปัจจุบัน" }] },
+      { title: "7. สไตล์การแต่งตัวที่คุณชอบที่สุด?", options: [{ text: "เสื้อยืด กางเกงยีนส์ สบายๆ", type: "สายมินิมอล เน้นความสะดวก" }, { text: "จัดเต็มตามเทรนด์แฟชั่นล่าสุด", type: "สายโดดเด่น มั่นใจสูง" }, { text: "ชุดทางการ / เนี๊ยบเรียบร้อย", type: "สายมืออาชีพ ดูน่าเชื่อถือ" }] },
+      { title: "8. เวลาไปเที่ยว คุณชอบพักที่ไหนมากที่สุด?", options: [{ text: "โรงแรม 5 ดาว สิ่งอำนวยความสะดวกครบ", type: "สายลักชัวรี ชอบความสบาย" }, { text: "โฮมสเตย์สัมผัสวิถีชาวบ้าน", type: "สายอินดี้ ชอบเรียนรู้ culture" }, { text: "พูลวิลล่าปาร์ตี้กับกลุ่มเพื่อน", type: "สายกิจกรรม ชอบความสนุกสนาน" }] },
+      { title: "9. แนวเพลงที่คุณเปิดฟังบ่อยที่สุด?", options: [{ text: "Pop / K-Pop ฟังง่าย จังหวะสนุก", type: "สายสดใส ทันกระแส" }, { text: "Lo-fi / Acoustic ฟังสบาย", type: "สายมีสมาธิ ชอบความสงบ" }, { text: "Rock / Hip-Hop จังหวะหนักแน่น", type: "สายพลังเยอะ มีแพสชัน" }] },
+      { title: "10. เวลาต้องตัดสินใจเรื่องสำคัญ คุณใช้อะไรนำทาง?", options: [{ text: "เหตุผล ข้อมูล และสถิติ", type: "สายตรรกะ คิดเป็นระบบ" }, { text: "ความรู้สึกแรก / สัญชาตญาณ", type: "สายอาร์ต เชื่อในความรู้สึก" }, { text: "ปรึกษาและฟังความเห็นจากคนรอบข้าง", type: "สายประตินิยม ใส่ใจผู้อื่น" }] },
+      { title: "11. โซเชียลมีเดียที่คุณเล่นบ่อยที่สุดคือ?", options: [{ text: "TikTok / Reels (คลิปสั้น)", type: "สายบันเทิง ชอบความรวดเร็ว" }, { text: "Instagram (คุมโทนรูปสวยๆ)", type: "สายสร้างสรรค์ ชอบเสพศิลปะ" }, { text: "X (Twitter) / Facebook", type: "สายทันโลก ติดตามข่าวสาร" }] },
+      { title: "12. สัตว์เลี้ยงประเภทไหนที่เป็นตัวแทนของคุณ?", options: [{ text: "สุนัข (ซื่อสัตย์ ร่าเริง)", type: "สายเฟรนด์ลี่ เป็นมิตร" }, { text: "แมว (เป็นตัวของตัวเอง อินดี้)", type: "สายลึกลับ รักอิสระ" }, { text: "คาปิบาร่า (สโลว์ไลฟ์)", type: "สายชิลขั้นสุด" }] },
+      { title: "13. คุณคิดอย่างไรกับการนัดหมาย?", options: [{ text: "ไปถึงก่อนเวลาเสมอ 10-15 นาที", type: "สายตรงต่อเวลา รับผิดชอบสูง" }, { text: "ไปถึงตรงเวลาเป๊ะพอดี", type: "สายจัดการเวลาดีเยี่ยม" }, { text: "สายเลทนิดหน่อย 5-10 นาที", type: "สายยืดหยุ่น" }] },
+      { title: "14. วิธีจัดการกับของเสีย/ของไม่ได้ใช้ในบ้าน?", options: [{ text: "ตัดใจทิ้งทันที / บริจาคให้หมด", type: "สายเด็ดขาด ชอบความสะอาด" }, { text: "เก็บไว้ก่อน เผื่อได้ใช้ในอนาคต", type: "สายช่างเสียดาย คุ้มค่า" }, { text: "เอามา DIY ดัดแปลงเป็นของใหม่", type: "สายช่างคิด ชอบประดิษฐ์" }] },
+      { title: "15. สภาพอากาศแบบไหนที่คุณชอบที่สุด?", options: [{ text: "อากาศหนาว มีหมอก เย็นสบาย", type: "สายโรแมนติก ชอบความอบอุ่น" }, { text: "แดดจัด ฟ้าใส สดใส", type: "สายแอคทีฟ ชอบกิจกรรม" }, { text: "ฝนตกพรำๆ นั่งฟังเสียงฝน", type: "สายลึกซึ้ง ชอบจินตนาการ" }] },
+      { title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?", options: [{ text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์", type: "สายเป้าหมายชัดเจน" }, { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายชอบความประหลาดใจ" }, { text: "เปรียบเทียบราคา ป้ายลดราคา", type: "สายฉลาดใช้เงิน" }] },
+      { title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?", options: [{ text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา เข้าใจผู้อื่น" }, { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว" }, { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน สมบูรณ์แบบ" }] },
+      { title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?", options: [{ text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสัน" }, { text: "มุมเงียบๆ คุยกับเพื่อนสนิท 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ" }, { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขการกิน" }] },
+      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปรับตัวเก่ง" }] },
+      { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
+    ];
 
         let W = window.innerWidth;
         let H = window.innerHeight;
@@ -77,9 +173,9 @@
             H = window.innerHeight;
             canvas.width = W;
             canvas.height = H;
-        });
+    });
 
-        // โหลดรูปซอมบี้ทั้ง 4 ชนิด
+    // โหลดรูปซอมบี้ทั้ง 4 ชนิด
         const zombieImages = [new Image(), new Image(), new Image(), new Image()];
         zombieImages[0].src = '/images/zombie1.png'; // ซอมบี้ตาโต
         zombieImages[1].src = '/images/zombie2.png'; // ซอมบี้เด็ก
@@ -388,7 +484,92 @@ function drawZombies() {
             document.getElementById('end-screen').style.display = 'block';
         }
 
-        gameLoop();
-    </script>
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+
+    // แสดงคำถามเมื่อยิงซอมบี้
+    function showQuiz() {
+      isQuizActive = true;
+      const q = questions[currentQuestionIndex];
+      document.getElementById('question-title').innerText = q.title;
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((opt) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-option';
+        btn.innerText = opt.text;
+        btn.onclick = () => selectOption(opt.type);
+        container.appendChild(btn);
+      });
+
+      document.getElementById('quizModal').style.display = 'flex';
+    }
+
+    function selectOption(type) {
+      selectedTypes.push(type);
+      document.getElementById('quizModal').style.display = 'none';
+
+      currentQuestionIndex++;
+      document.getElementById('zombieCount').innerText = currentQuestionIndex;
+
+      if (currentQuestionIndex < 20) {
+        isQuizActive = false;
+        spawnZombie();
+      } else {
+        finishGame();
+      }
+    }
+
+    // เมื่อยิงครบ 20 ตัว -> รอนับถอยหลัง 10 วินาที
+    function finishGame() {
+      isQuizActive = true;
+      document.getElementById('resultModal').style.display = 'flex';
+
+      let timeLeft = 10;
+      const timerEl = document.getElementById('timerText');
+
+      const countdown = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          showFinalResult();
+        }
+      }, 1000);
+    }
+
+    // แสดงผลสรุปคุณคือใคร
+    function showFinalResult() {
+      document.getElementById('timerText').style.display = 'none';
+
+      const counts = {};
+      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      let topType = "";
+      let maxCount = 0;
+      for (let t in counts) {
+        if (counts[t] > maxCount) {
+          maxCount = counts[t];
+          topType = t;
+        }
+      }
+
+      const resultBox = document.getElementById('result-box');
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <h3 style="margin-top:0; color:#03dac6;">💡 คุณคือ: ${topType}</h3>
+        <p style="margin-bottom:0;">คุณได้พิชิตซอมบี้ครบทั้ง 20 ตัวเรียบร้อยแล้ว!</p>
+      `;
+
+      socket.emit('submitAnswer', { optionText: topType });
+    }
+  </script>
 </body>
 </html>
