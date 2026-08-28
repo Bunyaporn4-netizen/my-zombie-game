@@ -218,6 +218,44 @@
       { imgIndex: 3, w: 80, h: 105, speed: 5.5 }
     ];
 
+        // ฟังก์ชันตัดสีขาวออกล่วงหน้าแค่นับครั้งเดียวตอนเริ่มเกม
+    function removeWhiteBackground(img, callback) {
+    img.onload = () => {
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = img.naturalWidth;
+        offCanvas.height = img.naturalHeight;
+        const offCtx = offCanvas.getContext('2d');
+
+        offCtx.drawImage(img, 0, 0);
+        const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+        const data = imgData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 230 && data[i + 1] > 230 && data[i + 2] > 230) {
+            data[i + 3] = 0; // ปรับให้โปร่งใส
+        }
+        }
+
+        offCtx.putImageData(imgData, 0, 0);
+
+        const processedImg = new Image();
+        processedImg.src = offCanvas.toDataURL();
+        processedImg.onload = () => callback(processedImg);
+    };
+    }
+
+    // โหลดและตัดสีขาวรูปซอมบี้ล่วงหน้า
+    const zombieImages = [];
+    const rawSources = ['/images/zombie1.png', '/images/zombie2.png', '/images/zombie3.png', '/images/zombie4.png'];
+
+    rawSources.forEach((src, index) => {
+    const rawImg = new Image();
+    rawImg.src = src;
+    removeWhiteBackground(rawImg, (cleanImg) => {
+        zombieImages[index] = cleanImg;
+    });
+    });
+
     function getRandomZombie(laneY, extraDelay = 0) {
       const spec = zombieSpecs[Math.floor(Math.random() * zombieSpecs.length)];
       return {
@@ -363,15 +401,16 @@
         z.x -= z.speed;
 
         if (z.x < -100) {
-          zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
-          return;
+        zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
+        return;
         }
 
         const img = zombieImages[z.imgIndex];
-        if (img.complete && img.naturalWidth > 0) {
-          drawImageWithoutWhite(img, z.x, z.y, z.w, z.h);
+        // วาดรูปธรรมดาได้เลย เพราะรูปถูกตัดสีขาวเรียบร้อยแล้วตั้งแต่นำเข้า
+        if (img && img.complete) {
+        ctx.drawImage(img, z.x, z.y, z.w, z.h);
         }
-      });
+    });
     }
 
     function drawCrosshair() {
