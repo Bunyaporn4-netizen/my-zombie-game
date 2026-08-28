@@ -58,6 +58,7 @@
       z-index: 5;
     }
 
+    /* Modal หน้าแรก */
     #startCountdownModal {
       display: flex;
       position: absolute;
@@ -88,22 +89,35 @@
       transform: scale(0.95);
     }
 
+    /* สไตล์ข้อความ ARE YOU READY? + Animation สั่น */
     #startCountdownText {
       display: none;
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 900;
       color: #ffffff;
       text-align: center;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
       text-transform: uppercase;
+      text-shadow: 0 0 15px #ffffff, 0 0 35px rgba(0, 255, 136, 0.9), 0 0 50px rgba(0, 255, 136, 0.6);
       opacity: 0;
       transform: scale(0.8);
-      transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+      transition: opacity 0.2s ease-in-out;
     }
 
     #startCountdownText.show {
       opacity: 1;
-      transform: scale(1.05);
+      display: block;
+      animation: shakeEffect 0.12s infinite alternate; /* เล่นเอฟเฟกต์สั่นตลอดเวลาที่แสดง */
+    }
+
+    /* Keyframes สำหรับสร้างเอฟเฟกต์สั่นสะเทือน */
+    @keyframes shakeEffect {
+      0% { transform: scale(1.05) translate(0, 0) rotate(0deg); }
+      20% { transform: scale(1.05) translate(-3px, 2px) rotate(-1deg); }
+      40% { transform: scale(1.05) translate(3px, -1px) rotate(1deg); }
+      60% { transform: scale(1.05) translate(-2px, -2px) rotate(-0.5deg); }
+      80% { transform: scale(1.05) translate(2px, 3px) rotate(0.5deg); }
+      100% { transform: scale(1.05) translate(-1px, -1px) rotate(0deg); }
     }
 
     .modal {
@@ -209,19 +223,15 @@
     const W = 800;
     const H = 600;
 
-    // --- Audio System ---
     let audioCtx = null;
 
     const audioElements = {
       ready: new Audio('audio/ready.mp3'),
-      time: new Audio('audio/time_has_come.mp3'),
-      begin: new Audio('audio/let_show_begin.mp3'),
       start: new Audio('audio/start.mp3'),
       shoot: new Audio('audio/shoot.mp3'),
       quiz: new Audio('audio/quiz.mp3')
     };
 
-    // โหลดไฟล์เสียงไว้รอก่อน
     Object.values(audioElements).forEach(audio => {
       audio.preload = 'auto';
     });
@@ -230,34 +240,13 @@
     bgm.loop = true;
     bgm.volume = 0.4;
 
-    // ฟังก์ชันเล่นเสียง และทำงานเมื่อเสียงจบจริง (onended)
-    function playSoundAndSync(key, onAudioEnd) {
+    function playSound(key) {
       const audio = audioElements[key];
-      if (!audio) {
-        if (onAudioEnd) onAudioEnd();
-        return;
-      }
-
-      try {
+      if (audio) {
         audio.currentTime = 0;
-        
-        // เมื่อไฟล์เสียงเล่นจบลง ให้รัน callback ทำงานถัดไปทันที
-        audio.onended = () => {
-          if (onAudioEnd) onAudioEnd();
-        };
-
-        const promise = audio.play();
-        if (promise !== undefined) {
-          promise.catch(err => {
-            console.warn("Audio play blocked or not found:", err);
-            // กรณีไม่มีไฟล์หรือเล่นไม่ได้ ให้ข้ามประโยคใน 1.5 วินาที
-            setTimeout(() => { if (onAudioEnd) onAudioEnd(); }, 1500);
-          });
-        }
-      } catch (e) {
-        console.warn("Audio error:", e);
-        if (onAudioEnd) onAudioEnd();
+        audio.play().catch(e => console.warn("Audio play blocked:", e));
       }
+      return audio;
     }
 
     let gameStarted = false;
@@ -342,7 +331,7 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- เริ่มต้นเกม ---
+    // --- เริ่มต้นเกมแบบแสดงข้อความสั่น + เล่นเสียงเดียวแล้วเข้าเกมเลย ---
     function initAndStartCinematic() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -351,46 +340,33 @@
         audioCtx.resume();
       }
 
+      // ซ่อนปุ่มกด
       document.getElementById('btnStartGame').style.display = 'none';
-      document.getElementById('startCountdownText').style.display = 'block';
 
-      startCinematicIntro();
-    }
-
-    // --- ซิงค์ข้อความกับเสียงด้วย Event ---
-    function startCinematicIntro() {
+      // แสดงข้อความสั่น ARE YOU READY?
       const el = document.getElementById('startCountdownText');
-      const sequence = [
-        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)", audioKey: "ready" },
-        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)", audioKey: "time" },
-        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)", audioKey: "begin" }
-      ];
+      el.classList.add('show');
 
-      let index = 0;
+      // เล่นเสียง ready.mp3
+      const audioReady = playSound('ready');
 
-      function playNextStep() {
-        if (index < sequence.length) {
-          const item = sequence[index];
-          
-          el.innerText = item.text;
-          el.style.color = item.color;
-          el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
-          el.classList.add('show');
+      // ฟังก์ชันเมื่อเริ่มเกม
+      const startGameAction = () => {
+        playSound('start');
+        document.getElementById('startCountdownModal').style.display = 'none';
+        gameStarted = true;
+      };
 
-          playSoundAndSync(item.audioKey, () => {
-            el.classList.remove('show');
-            index++;
-            setTimeout(playNextStep, 100);
-          });
-
-        } else {
-          playSoundAndSync('start');
-          document.getElementById('startCountdownModal').style.display = 'none';
-          gameStarted = true;
-        }
+      // ถ้าเล่นเสียงสำเร็จ รอจนเสียงพูดจบ (onended) ค่อยเริ่มเกม
+      if (audioReady) {
+        audioReady.onended = startGameAction;
+        // ป้องกันกรณีไฟล์ไม่เล่น ให้สคริปต์ไปต่อเองใน 2 วินาที
+        setTimeout(() => {
+          if (!gameStarted) startGameAction();
+        }, 2000);
+      } else {
+        setTimeout(startGameAction, 1500);
       }
-
-      playNextStep();
     }
 
     function drawCemeteryBackground() {
@@ -506,7 +482,7 @@
       if (!gameStarted || isQuizActive) return;
       e.preventDefault();
 
-      playSoundAndSync('shoot');
+      playSound('shoot');
 
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -585,7 +561,7 @@
 
     function showQuiz() {
       isQuizActive = true;
-      playSoundAndSync('quiz');
+      playSound('quiz');
 
       const q = questions[currentQuestionIndex];
       document.getElementById('question-title').innerText = q.title;
