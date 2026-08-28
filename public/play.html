@@ -1,373 +1,394 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zombie Quiz Game - Play</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Kanit', sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    #gameContainer {
-      position: relative;
-      width: 800px;
-      height: 600px;
-    }
-    canvas {
-      border: 3px solid #ff4444;
-      background-color: #1e1e1e;
-      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
-      border-radius: 12px;
-    }
-    #hud {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: rgba(0, 0, 0, 0.75);
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #00ff88;
-      border: 1px solid #00ff88;
-      pointer-events: none;
-    }
-    /* ป๊อปอัปคำถาม */
-    .modal {
-      display: none;
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(5px);
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-      border-radius: 12px;
-    }
-    .modal-content {
-      background-color: #1e1e1e;
-      border-radius: 12px;
-      padding: 24px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-      text-align: center;
-      border: 2px solid #ff4444;
-    }
-    h2 {
-      margin-top: 0;
-      color: #bb86fc;
-      font-size: 1.3rem;
-    }
-    .btn-option {
-      background-color: #3700b3;
-      color: white;
-      border: none;
-      padding: 14px 20px;
-      margin: 10px 0;
-      width: 100%;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
-      text-align: left;
-    }
-    .btn-option:hover {
-      background-color: #6200ee;
-    }
-    .btn-option:active {
-      transform: scale(0.98);
-    }
-    #timerText {
-      font-size: 48px;
-      color: #ffbb00;
-      margin: 20px 0;
-      font-weight: bold;
-    }
-    #result-box {
-      display: none;
-      margin-top: 15px;
-      padding: 15px;
-      background-color: #2c2c2c;
-      border-left: 4px solid #03dac6;
-      border-radius: 4px;
-      text-align: left;
-      font-size: 1rem;
-      line-height: 1.4;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zombie Cannon Career Quiz</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Kanit', sans-serif; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        .quiz-modal {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 100;
+        }
+        .quiz-card {
+            background: linear-gradient(145deg, #1e272e, #0f171e);
+            border: 3px solid #ff4757; border-radius: 20px; padding: 25px; width: 90%; max-width: 420px;
+            text-align: center; color: white; box-shadow: 0 15px 35px rgba(255, 71, 87, 0.3);
+        }
+        .quiz-card h3 { margin-top: 0; font-size: 22px; color: #ffd32a; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .btn {
+            display: block; width: 100%; padding: 14px; margin: 12px 0; font-size: 18px; font-weight: bold; color: white;
+            border: none; border-radius: 12px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+        .b1 { background: linear-gradient(to bottom, #ff5e57, #d63031); }
+        .b2 { background: linear-gradient(to bottom, #0fbcf9, #0984e3); }
+        .b3 { background: linear-gradient(to bottom, #ffa801, #e17055); }
+        .b4 { background: linear-gradient(to bottom, #05c46b, #00b894); }
+        
+        #end-screen { 
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            color: #05c46b; text-align: center; z-index: 101; text-shadow: 0 0 20px rgba(5, 196, 107, 0.6);
+        }
+    </style>
 </head>
 <body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="quiz-modal" class="quiz-modal">
+            <div class="quiz-card">
+                <h3>💥 กำจัดซอมบี้สำเร็จ!<br>เลือกสายการเรียนที่ใช่สำหรับคุณ:</h3>
+                <button class="btn b1" onclick="submitAnswer('วิทย์-คณิต')">🧪 วิทย์-คณิต</button>
+                <button class="btn b2" onclick="submitAnswer('ศิลป์-คำนวณ')">📊 ศิลป์-คำนวณ</button>
+                <button class="btn b3" onclick="submitAnswer('ศิลป์-ภาษา')">🗣️ ศิลป์-ภาษา</button>
+                <button class="btn b4" onclick="submitAnswer('สายอาชีพ')">🛠️ สายอาชีพ</button>
+            </div>
+        </div>
 
-  <div id="gameContainer">
-    <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-
-    <!-- ป๊อปอัปคำถาม -->
-    <div id="quizModal" class="modal">
-      <div class="modal-content">
-        <h2 id="question-title">กำลังโหลดคำถาม...</h2>
-        <div id="options-container"></div>
-      </div>
+        <div id="end-screen">
+            <h1 style="font-size: 38px; margin-bottom: 5px;">🎉 VICTORY!</h1>
+            <p style="color:white; font-size: 20px;">บันทึกผลการเลือกสายอาชีพเรียบร้อยแล้ว</p>
+        </div>
     </div>
 
-    <!-- ป๊อปอัปสรุปผลลัพธ์ -->
-    <div id="resultModal" class="modal">
-      <div class="modal-content">
-        <h2>🎉 กำลังประมวลผลผลลัพธ์...</h2>
-        <p>กรุณารอสักครู่ ระบบกำลังคำนวณตัวตนของคุณ</p>
-        <div id="timerText">10</div>
-        <div id="result-box"></div>
-      </div>
-    </div>
-  </div>
+    <script>
+        let socket;
+        try { socket = io(); } catch(e) {}
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-    // รายการคำถาม 20 ข้อ
-    const questions = [
-      { title: "1. วันหยุดสุดสัปดาห์ คุณอยากทำอะไรมากที่สุด?", options: [{ text: "ไปเที่ยวต่างจังหวัด / ตั้งแคมป์", type: "สายลุย ชอบธรรมชาติและการผจญภัย" }, { text: "นอนดูซีรีส์อยู่ห้องชิลๆ", type: "สายสโลว์ไลฟ์ รักความสงบ" }, { text: "ไปเดินห้าง ช้อปปิ้ง หาคาเฟ่เก๋ๆ", type: "สายแฟชั่น ชอบความทันสมัย" }] },
-      { title: "2. เวลาเจอเรื่องเครียด คุณเลือกวิธีไหนในการฮีลใจ?", options: [{ text: "กินของอร่อยๆ ที่ชอบ", type: "นักชิม ใช้ความอร่อยเยียวยา" }, { text: "ออกกำลังกาย / เล่นกีฬา", type: "สายแอคทีฟ ปลดปล่อยพลังงาน" }, { text: "คุยกับเพื่อนสนิท / ระบายให้คนอื่นฟัง", type: "สายเอ็กโทรเวิร์ต รักมิตรภาพ" }] },
-      { title: "3. อาหารมื้อเย็นที่คู่ควรกับคุณคืออะไร?", options: [{ text: "ชาบู / หมูกระทะ", type: "สายปาร์ตี้ ชอบกินจัดเต็ม" }, { text: "สลัด / อาหารคลีนเพื่อสุขภาพ", type: "สายเฮลตี้ ใส่ใจสุขภาพ" }, { text: "อาหารตามสั่งง่ายๆ รวดเร็ว", type: "สายยุทธศาสตร์ เน้นความคล่องตัว" }] },
-      { title: "4. เมื่อต้องทำงานเป็นกลุ่ม คุณมักจะรับบทบาทไหน?", options: [{ text: "ผู้นำ / คนคอยแจกจ่ายงาน", type: "สายลีดเดอร์ ชอบบริหาร" }, { text: "คนคิดไอเดีย / ออกแบบงาน", type: "สายคริเอทีฟ ความคิดสร้างสรรค์สูง" }, { text: "ฝ่ายหาข้อมูล / คอยสนับสนุนเพื่อน", type: "สายซัพพอร์ต ละเอียดรอบคอบ" }] },
-      { title: "5. เครื่องดื่มแก้วโปรดช่วงเช้าของคุณคือ?", options: [{ text: "กาแฟดำ / อเมริกาโน่", type: "สายจริงจัง พร้อมลุยงาน" }, { text: "ชาไข่มุก / นมสดหวานร้อย", type: "สายสดใส เติมความหวาน" }, { text: "น้ำผลไม้สกัด / น้ำเปล่าเย็นๆ", type: "สายรักตัวเอง เน้นความสดชื่น" }] },
-      { title: "6. ถ้าชนะรางวัลใหญ่ คุณจะเอาเงินไปทำอะไรก่อน?", options: [{ text: "ลงทุน / เก็บออมในธนาคาร", type: "สายวางแผนอนาคต มั่นคง" }, { text: "ตั๋วเครื่องบินไปเที่ยวรอบโลก", type: "สายรักอิสระ เปิดโลกทัศน์" }, { text: "ซื้อมือถือใหม่ / ของที่อยากได้", type: "สายรางวัลชีวิต ให้ความสุขปัจจุบัน" }] },
-      { title: "7. สไตล์การแต่งตัวที่คุณชอบที่สุด?", options: [{ text: "เสื้อยืด กางเกงยีนส์ สบายๆ", type: "สายมินิมอล เน้นความสะดวก" }, { text: "จัดเต็มตามเทรนด์แฟชั่นล่าสุด", type: "สายโดดเด่น มั่นใจสูง" }, { text: "ชุดทางการ / เนี๊ยบเรียบร้อย", type: "สายมืออาชีพ ดูน่าเชื่อถือ" }] },
-      { title: "8. เวลาไปเที่ยว คุณชอบพักที่ไหนมากที่สุด?", options: [{ text: "โรงแรม 5 ดาว สิ่งอำนวยความสะดวกครบ", type: "สายลักชัวรี ชอบความสบาย" }, { text: "โฮมสเตย์สัมผัสวิถีชาวบ้าน", type: "สายอินดี้ ชอบเรียนรู้ culture" }, { text: "พูลวิลล่าปาร์ตี้กับกลุ่มเพื่อน", type: "สายกิจกรรม ชอบความสนุกสนาน" }] },
-      { title: "9. แนวเพลงที่คุณเปิดฟังบ่อยที่สุด?", options: [{ text: "Pop / K-Pop ฟังง่าย จังหวะสนุก", type: "สายสดใส ทันกระแส" }, { text: "Lo-fi / Acoustic ฟังสบาย", type: "สายมีสมาธิ ชอบความสงบ" }, { text: "Rock / Hip-Hop จังหวะหนักแน่น", type: "สายพลังเยอะ มีแพสชัน" }] },
-      { title: "10. เวลาต้องตัดสินใจเรื่องสำคัญ คุณใช้อะไรนำทาง?", options: [{ text: "เหตุผล ข้อมูล และสถิติ", type: "สายตรรกะ คิดเป็นระบบ" }, { text: "ความรู้สึกแรก / สัญชาตญาณ", type: "สายอาร์ต เชื่อในความรู้สึก" }, { text: "ปรึกษาและฟังความเห็นจากคนรอบข้าง", type: "สายประตินิยม ใส่ใจผู้อื่น" }] },
-      { title: "11. โซเชียลมีเดียที่คุณเล่นบ่อยที่สุดคือ?", options: [{ text: "TikTok / Reels (คลิปสั้น)", type: "สายบันเทิง ชอบความรวดเร็ว" }, { text: "Instagram (คุมโทนรูปสวยๆ)", type: "สายสร้างสรรค์ ชอบเสพศิลปะ" }, { text: "X (Twitter) / Facebook", type: "สายทันโลก ติดตามข่าวสาร" }] },
-      { title: "12. สัตว์เลี้ยงประเภทไหนที่เป็นตัวแทนของคุณ?", options: [{ text: "สุนัข (ซื่อสัตย์ ร่าเริง)", type: "สายเฟรนด์ลี่ เป็นมิตร" }, { text: "แมว (เป็นตัวของตัวเอง อินดี้)", type: "สายลึกลับ รักอิสระ" }, { text: "คาปิบาร่า (สโลว์ไลฟ์)", type: "สายชิลขั้นสุด" }] },
-      { title: "13. คุณคิดอย่างไรกับการนัดหมาย?", options: [{ text: "ไปถึงก่อนเวลาเสมอ 10-15 นาที", type: "สายตรงต่อเวลา รับผิดชอบสูง" }, { text: "ไปถึงตรงเวลาเป๊ะพอดี", type: "สายจัดการเวลาดีเยี่ยม" }, { text: "สายเลทนิดหน่อย 5-10 นาที", type: "สายยืดหยุ่น" }] },
-      { title: "14. วิธีจัดการกับของเสีย/ของไม่ได้ใช้ในบ้าน?", options: [{ text: "ตัดใจทิ้งทันที / บริจาคให้หมด", type: "สายเด็ดขาด ชอบความสะอาด" }, { text: "เก็บไว้ก่อน เผื่อได้ใช้ในอนาคต", type: "สายช่างเสียดาย คุ้มค่า" }, { text: "เอามา DIY ดัดแปลงเป็นของใหม่", type: "สายช่างคิด ชอบประดิษฐ์" }] },
-      { title: "15. สภาพอากาศแบบไหนที่คุณชอบที่สุด?", options: [{ text: "อากาศหนาว มีหมอก เย็นสบาย", type: "สายโรแมนติก ชอบความอบอุ่น" }, { text: "แดดจัด ฟ้าใส สดใส", type: "สายแอคทีฟ ชอบกิจกรรม" }, { text: "ฝนตกพรำๆ นั่งฟังเสียงฝน", type: "สายลึกซึ้ง ชอบจินตนาการ" }] },
-      { title: "16. เวลาไปซูเปอร์มาร์เก็ต คุณมีพฤติกรรมอย่างไร?", options: [{ text: "จดลิสต์มาจากบ้าน เดินซื้อตามลิสต์", type: "สายเป้าหมายชัดเจน" }, { text: "เดินดูไปเรื่อยๆ เจออะไรน่ากินค่อยหยิบ", type: "สายชอบความประหลาดใจ" }, { text: "เปรียบเทียบราคา ป้ายลดราคา", type: "สายฉลาดใช้เงิน" }] },
-      { title: "17. ถ้าเลือกซูเปอร์เพาเวอร์ได้ 1 อย่าง คุณอยากได้อะไร?", options: [{ text: "อ่านใจคนอื่นได้", type: "สายจิตวิทยา เข้าใจผู้อื่น" }, { text: "วาร์ปไปไหนก็ได้ทันที", type: "สายรักความสะดวก ไว" }, { text: "ย้อนเวลาไปแก้ไขอดีตได้", type: "สายพิถีพิถัน สมบูรณ์แบบ" }] },
-      { title: "18. ในงานปาร์ตี้ คุณมักจะอยู่ตรงไหนของงาน?", options: [{ text: "ใจกลางงาน สนุกสนานกับทุกคน", type: "สายดาวเด่น สร้างสีสัน" }, { text: "มุมเงียบๆ คุยกับเพื่อนสนิท 1-2 คน", type: "สายเน้นคุณภาพมิตรภาพ" }, { text: "ยืนอยู่ใกล้ๆ โซนอาหารและเครื่องดื่ม", type: "สายโฟกัสความสุขการกิน" }] },
-      { title: "19. คุณใช้วิธีไหนในการตั้งเป้าหมายชีวิต?", options: [{ text: "เขียนแผนงาน 1 ปี, 5 ปี ชัดเจน", type: "สายมุ่งมั่น วิสัยทัศน์สูง" }, { text: "ตั้งเป้าหมายสั้นๆ ทำทีละวัน", type: "สายโฟกัสปัจจุบัน" }, { text: "ปล่อยให้ชีวิตไหลไปตามโอกาส", type: "สายยืดหยุ่น ปรับตัวเก่ง" }] },
-      { title: "20. คุณอยากให้คนอื่นจดจำคุณในฐานะคนแบบไหน?", options: [{ text: "คนเก่ง ประสบความสำเร็จ พึ่งพาได้", type: "สายสร้างผลงาน ทะเยอทะยาน" }, { text: "คนใจดี อยู่ด้วยแล้วมีความสุข", type: "สายสร้างพลังบวก" }, { text: "คนตลก อารมณ์ดี สร้างเสียงหัวเราะ", type: "สายเอนเตอร์เทนเนอร์" }] }
-    ];
+        let W = window.innerWidth;
+        let H = window.innerHeight;
+        canvas.width = W;
+        canvas.height = H;
 
-    let currentQuestionIndex = 0;
-    let selectedTypes = [];
-    let isQuizActive = false;
-
-    // ตัวละคร และ ซอมบี้
-    const player = { x: 400, y: 500, size: 20, speed: 5, color: '#00ff88' };
-    let bullets = [];
-    let currentZombie = null;
-
-    const keys = {};
-    let mousePos = { x: 0, y: 0 };
-
-    window.addEventListener('keydown', e => keys[e.key] = true);
-    window.addEventListener('keyup', e => keys[e.key] = false);
-
-    canvas.addEventListener('mousemove', e => {
-      const rect = canvas.getBoundingClientRect();
-      mousePos.x = e.clientX - rect.left;
-      mousePos.y = e.clientY - rect.top;
-    });
-
-    canvas.addEventListener('click', () => {
-      if (!isQuizActive && currentQuestionIndex < 20) {
-        const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-        bullets.push({
-          x: player.x,
-          y: player.y,
-          vx: Math.cos(angle) * 10,
-          vy: Math.sin(angle) * 10
+        window.addEventListener('resize', () => {
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W;
+            canvas.height = H;
         });
-      }
+
+        // โหลดรูปซอมบี้ทั้ง 4 ชนิด
+        const zombieImages = [new Image(), new Image(), new Image(), new Image()];
+        zombieImages[0].src = '/images/zombie1.png'; // ซอมบี้ตาโต
+        zombieImages[1].src = '/images/zombie2.png'; // ซอมบี้เด็ก
+        zombieImages[2].src = '/images/zombie3.png'; // ซอมบี้ตัวใหญ่
+        zombieImages[3].src = '/images/zombie4.png'; // ซอมบี้หัวกรวย
+
+        let targetCrosshair = null;
+        let isQuizActive = false;
+        let cannonBalls = [];
+        let particles = [];
+        let cannonAngle = 0;
+        let muzzleFlash = 0;
+
+        const fireflies = Array.from({ length: 25 }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H * 0.8,
+            r: Math.random() * 3 + 1,
+            alpha: Math.random(),
+            speed: Math.random() * 0.02 + 0.005
+        }));
+
+        // ตั้งค่าสเปกของซอมบี้ทั้ง 4 ตัว (ขนาด ความเร็ว)
+        const zombieSpecs = [
+            { imgIndex: 0, w: 75, h: 95,  speed: 5.5, fallbackColor: '#2ed573' }, // Zombie 1 (ปกติ)
+            { imgIndex: 1, w: 60, h: 75,  speed: 5.5, fallbackColor: '#ffa502' }, // Zombie 2 (เด็ก-วิ่งไว)
+            { imgIndex: 2, w: 105, h: 120, speed: 5.5, fallbackColor: '#ff4757' }, // Zombie 3 (ตัวใหญ่-ถึก)
+            { imgIndex: 3, w: 80, h: 105, speed: 5.5, fallbackColor: '#e1b12c' }  // Zombie 4 (หัวกรวย)
+        ];
+
+        function getRandomZombie(laneY, extraDelay = 0) {
+            const specIndex = Math.floor(Math.random() * zombieSpecs.length);
+            const spec = zombieSpecs[specIndex];
+            return {
+                imgIndex: spec.imgIndex,
+                x: W + extraDelay + Math.random() * 250,
+                y: laneY - spec.h * 0.5,
+                baseY: laneY - spec.h * 0.5,
+                w: spec.w,
+                h: spec.h,
+                speed: spec.speed,
+                fallbackColor: spec.fallbackColor,
+                alive: true
+            };
+        }
+
+        // สร้างซอมบี้ตั้งต้นกระจายตามเลนต่างๆ
+        let zombies = [
+            getRandomZombie(H * 0.46, 0),
+            getRandomZombie(H * 0.58, 80),
+            getRandomZombie(H * 0.58, 300),
+            getRandomZombie(H * 0.70, 0),
+            getRandomZombie(H * 0.70, 220),
+            getRandomZombie(H * 0.80, 150)
+        ];
+
+        function drawCemeteryBackground() {
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+            skyGrad.addColorStop(0, '#0a1526');
+            skyGrad.addColorStop(0.6, '#132a4a');
+            skyGrad.addColorStop(1, '#1b3b5a');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            const moonX = W * 0.82;
+            const moonY = H * 0.22;
+            const moonRadius = 55;
+
+            const moonGlow = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.8, moonX, moonY, moonRadius * 2.5);
+            moonGlow.addColorStop(0, 'rgba(255, 255, 220, 0.8)');
+            moonGlow.addColorStop(0.5, 'rgba(255, 255, 180, 0.2)');
+            moonGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = moonGlow;
+            ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius * 2.5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#fffae6';
+            ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = 'rgba(10, 15, 25, 0.55)';
+            ctx.beginPath(); ctx.ellipse(W * 0.2, H * 0.15, 140, 35, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(W * 0.75, H * 0.12, 180, 45, 0, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#17301c';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.55);
+            ctx.quadraticCurveTo(W * 0.25, H * 0.48, W * 0.5, H * 0.53);
+            ctx.quadraticCurveTo(W * 0.75, H * 0.58, W, H * 0.5);
+            ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+
+            ctx.fillStyle = '#0f2113';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.65);
+            ctx.quadraticCurveTo(W * 0.4, H * 0.58, W * 0.7, H * 0.64);
+            ctx.quadraticCurveTo(W * 0.85, H * 0.67, W, H * 0.62);
+            ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+
+            ctx.fillStyle = '#4a5b6d';
+            ctx.beginPath();
+            ctx.roundRect(W * 0.18, H * 0.46, 75, 90, [35, 35, 0, 0]);
+            ctx.fill();
+            ctx.fillStyle = '#2c3a47';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('R.I.P', W * 0.18 + 23, H * 0.46 + 45);
+
+            const drawCross = (x, y, scale) => {
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(x - 4 * scale, y, 8 * scale, 45 * scale);
+                ctx.fillRect(x - 14 * scale, y + 12 * scale, 28 * scale, 7 * scale);
+            };
+            drawCross(W * 0.42, H * 0.50, 1.2);
+            drawCross(W * 0.62, H * 0.54, 0.9);
+            drawCross(W * 0.88, H * 0.52, 1.1);
+
+            fireflies.forEach(f => {
+                f.alpha += f.speed;
+                if (f.alpha > 1 || f.alpha < 0) f.speed = -f.speed;
+                ctx.fillStyle = `rgba(186, 255, 41, ${Math.max(0, f.alpha)})`;
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+            });
+        }
+
+        function drawCannon() {
+            const baseX = 20;
+            const baseY = H * 0.72;
+
+            ctx.save();
+            ctx.translate(baseX, baseY);
+
+            ctx.save();
+            ctx.rotate(cannonAngle);
+
+            const metalGrad = ctx.createLinearGradient(0, -18, 0, 18);
+            metalGrad.addColorStop(0, '#718093');
+            metalGrad.addColorStop(0.5, '#2f3640');
+            metalGrad.addColorStop(1, '#1e272e');
+            ctx.fillStyle = metalGrad;
+            ctx.fillRect(0, -16, 85, 32);
+            ctx.fillStyle = '#e1b12c';
+            ctx.fillRect(75, -18, 10, 36);
+
+            if (muzzleFlash > 0) {
+                ctx.fillStyle = '#ff9f43';
+                ctx.beginPath(); ctx.arc(95, 0, 22, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ff4757';
+                ctx.beginPath(); ctx.arc(105, 0, 14, 0, Math.PI * 2); ctx.fill();
+                muzzleFlash--;
+            }
+            ctx.restore();
+
+            ctx.fillStyle = '#535c68';
+            ctx.beginPath(); ctx.arc(0, 16, 18, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2f3640';
+            ctx.beginPath(); ctx.arc(0, 16, 7, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        function createExplosion(x, y) {
+            for (let i = 0; i < 22; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.5) * 14,
+                    radius: Math.random() * 5 + 2,
+                    color: ['#ff4757', '#ffa502', '#badc58', '#ffffff'][Math.floor(Math.random() * 4)],
+                    life: 25
+                });
+            }
+        }
+
+        // ฟังก์ชันลบสีขาวออกจากรูปภาพก่อนแสดงผล
+function drawImageWithoutWhite(img, x, y, w, h) {
+    if (!img.complete || img.naturalWidth === 0) return;
+
+    // สร้าง Offscreen Canvas เพื่อประมวลผลรูป
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = img.naturalWidth;
+    offCanvas.height = img.naturalHeight;
+    const offCtx = offCanvas.getContext('2d');
+    
+    offCtx.drawImage(img, 0, 0);
+    const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+    const data = imgData.data;
+
+    // วนลูปเช็คพิกเซล ถ้าใกล้เคียงสีขาว ให้ปรับ Alpha (ความใส) เป็น 0
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        if (r > 230 && g > 230 && b > 230) {
+            data[i + 3] = 0; // โปร่งใส
+        }
+    }
+    
+    offCtx.putImageData(imgData, 0, 0);
+    ctx.drawImage(offCanvas, x, y, w, h);
+}
+
+function drawZombies() {
+    zombies.forEach((z, idx) => {
+        if (!z.alive) return;
+        
+        z.x -= z.speed;
+
+        if (z.x < 50) {
+            zombies[idx] = getRandomZombie(z.baseY + z.h * 0.5);
+            return;
+        }
+
+        const img = zombieImages[z.imgIndex];
+        if (img.complete && img.naturalWidth > 0) {
+            drawImageWithoutWhite(img, z.x, z.y, z.w, z.h);
+        }
     });
-
-    function spawnZombie() {
-      if (currentQuestionIndex < 20) {
-        currentZombie = {
-          x: Math.random() * (canvas.width - 100) + 50,
-          y: Math.random() * (canvas.height / 2) + 50,
-          size: 25,
-          color: '#ff4444'
-        };
-      } else {
-        currentZombie = null;
-      }
-    }
-
-    spawnZombie();
-
-    function update() {
-      if (isQuizActive) return;
-
-      // บังคับตัวละคร WASD / ลูกศร
-      if ((keys['ArrowUp'] || keys['w']) && player.y > player.size) player.y -= player.speed;
-      if ((keys['ArrowDown'] || keys['s']) && player.y < canvas.height - player.size) player.y += player.speed;
-      if ((keys['ArrowLeft'] || keys['a']) && player.x > player.size) player.x -= player.speed;
-      if ((keys['ArrowRight'] || keys['d']) && player.x < canvas.width - player.size) player.x += player.speed;
-
-      // เคลื่อนที่กระสุน
-      for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.x += b.vx;
-        b.y += b.vy;
-
-        // เช็กยิงโดนซอมบี้
-        if (currentZombie) {
-          const dist = Math.hypot(b.x - currentZombie.x, b.y - currentZombie.y);
-          if (dist < currentZombie.size) {
-            bullets.splice(i, 1);
-            showQuiz();
-            break;
-          }
+}
+        function drawCrosshair() {
+            if (!targetCrosshair) return;
+            const { x, y } = targetCrosshair;
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 30, y); ctx.lineTo(x + 30, y);
+            ctx.moveTo(x, y - 30); ctx.lineTo(x, y + 30);
+            ctx.stroke();
         }
 
-        // ลบกระสุนตกจอ
-        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-          bullets.splice(i, 1);
+        function gameLoop() {
+            ctx.clearRect(0, 0, W, H);
+
+            drawCemeteryBackground();
+            drawCannon();
+            drawZombies();
+
+            cannonBalls.forEach((b, index) => {
+                b.x += b.vx;
+                b.y += b.vy;
+
+                ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
+                ctx.beginPath(); ctx.arc(b.x - b.vx * 0.3, b.y - b.vy * 0.3, 7, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#2f3640';
+                ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI * 2); ctx.fill();
+
+                if (Math.hypot(b.x - b.tx, b.y - b.ty) < 18) {
+                    cannonBalls.splice(index, 1);
+                    targetCrosshair = null;
+                    createExplosion(b.tx, b.ty);
+                    if (b.hit) {
+                        b.hit.alive = false;
+                        setTimeout(showQuiz, 300);
+                    }
+                }
+            });
+
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+                if (p.life <= 0) particles.splice(index, 1);
+            });
+
+            drawCrosshair();
+            requestAnimationFrame(gameLoop);
         }
-      }
-    }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isQuizActive) return;
 
-      // วาดตัวละครผู้เล่น
-      ctx.fillStyle = player.color;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-      ctx.fill();
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
 
-      // วาดเส้นเป้าเล็ง
-      ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)';
-      ctx.beginPath();
-      ctx.moveTo(player.x, player.y);
-      ctx.lineTo(mousePos.x, mousePos.y);
-      ctx.stroke();
+            targetCrosshair = { x: clickX, y: clickY };
 
-      // วาดกระสุน
-      ctx.fillStyle = '#ffff00';
-      bullets.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      });
+            const startX = 20;
+            const startY = H * 0.72;
+            
+            cannonAngle = Math.atan2(clickY - startY, clickX - startX);
+            muzzleFlash = 4;
 
-      // วาดซอมบี้
-      if (currentZombie) {
-        ctx.fillStyle = currentZombie.color;
-        ctx.beginPath();
-        ctx.arc(currentZombie.x, currentZombie.y, currentZombie.size, 0, Math.PI * 2);
-        ctx.fill();
+            let hit = zombies.find(z => z.alive && 
+                clickX >= z.x && clickX <= z.x + z.w &&
+                clickY >= z.y && clickY <= z.y + z.h
+            );
 
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(currentZombie.x - 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
-        ctx.arc(currentZombie.x + 7, currentZombie.y - 5, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+            const speed = 23;
+            cannonBalls.push({
+                x: startX, y: startY,
+                vx: Math.cos(cannonAngle) * speed,
+                vy: Math.sin(cannonAngle) * speed,
+                tx: clickX, ty: clickY,
+                hit: hit
+            });
+        });
 
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
-    gameLoop();
-
-    // แสดงคำถามเมื่อยิงซอมบี้
-    function showQuiz() {
-      isQuizActive = true;
-      const q = questions[currentQuestionIndex];
-      document.getElementById('question-title').innerText = q.title;
-
-      const container = document.getElementById('options-container');
-      container.innerHTML = '';
-
-      q.options.forEach((opt) => {
-        const btn = document.createElement('button');
-        btn.className = 'btn-option';
-        btn.innerText = opt.text;
-        btn.onclick = () => selectOption(opt.type);
-        container.appendChild(btn);
-      });
-
-      document.getElementById('quizModal').style.display = 'flex';
-    }
-
-    function selectOption(type) {
-      selectedTypes.push(type);
-      document.getElementById('quizModal').style.display = 'none';
-
-      currentQuestionIndex++;
-      document.getElementById('zombieCount').innerText = currentQuestionIndex;
-
-      if (currentQuestionIndex < 20) {
-        isQuizActive = false;
-        spawnZombie();
-      } else {
-        finishGame();
-      }
-    }
-
-    // เมื่อยิงครบ 20 ตัว -> รอนับถอยหลัง 10 วินาที
-    function finishGame() {
-      isQuizActive = true;
-      document.getElementById('resultModal').style.display = 'flex';
-
-      let timeLeft = 10;
-      const timerEl = document.getElementById('timerText');
-
-      const countdown = setInterval(() => {
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          showFinalResult();
+        function showQuiz() {
+            isQuizActive = true;
+            document.getElementById('quiz-modal').style.display = 'flex';
         }
-      }, 1000);
-    }
 
-    // แสดงผลสรุปคุณคือใคร
-    function showFinalResult() {
-      document.getElementById('timerText').style.display = 'none';
-
-      const counts = {};
-      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
-
-      let topType = "";
-      let maxCount = 0;
-      for (let t in counts) {
-        if (counts[t] > maxCount) {
-          maxCount = counts[t];
-          topType = t;
+        function submitAnswer(choice) {
+            if (socket) socket.emit('submitVote', choice);
+            document.getElementById('quiz-modal').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
         }
-      }
 
-      const resultBox = document.getElementById('result-box');
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6;">💡 คุณคือ: ${topType}</h3>
-        <p style="margin-bottom:0;">คุณได้พิชิตซอมบี้ครบทั้ง 20 ตัวเรียบร้อยแล้ว!</p>
-      `;
-
-      socket.emit('submitAnswer', { optionText: topType });
-    }
-  </script>
+        gameLoop();
+    </script>
 </body>
 </html>
