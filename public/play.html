@@ -7,7 +7,8 @@
   <style>
     * { 
       box-sizing: border-box; 
-      touch-action: none;
+      /* ป้องกัน double-tap zoom และการเลือกข้อความ */
+      touch-action: manipulation;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
@@ -26,6 +27,8 @@
       background-color: #000000;
       font-family: 'Kanit', sans-serif;
       color: #ffffff;
+      /* ล็อคไม่ให้ซูมหรือเลื่อนหน้าจอ */
+      touch-action: none;
     }
     
     #gameContainer {
@@ -148,6 +151,7 @@
       font-size: 1rem;
       text-align: center;
       outline: none;
+      touch-action: auto; /* อนุญาตให้พิมพ์ใน input ได้ */
     }
 
     .input-box input:focus {
@@ -177,6 +181,7 @@
       cursor: pointer;
       box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
       transition: transform 0.2s, box-shadow 0.2s;
+      touch-action: manipulation;
     }
 
     .btn-main:active {
@@ -246,6 +251,7 @@
       transition: background-color 0.2s, transform 0.1s;
       text-align: left;
       line-height: 1.4;
+      touch-action: manipulation;
     }
 
     .btn-option:active {
@@ -320,10 +326,25 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    // ป้องกัน Touch Scrolling ของบราวเซอร์ทั้งหมด
+    // 1. ป้องกัน Touch Scroll
     document.addEventListener('touchmove', function(e) {
       e.preventDefault();
     }, { passive: false });
+
+    // 2. ป้องกัน Double-Tap Zoom บน iOS Safari
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+
+    // 3. ป้องกัน Gesture Zoom (การใช้นิ้วถ่างซูม)
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
 
     const socket = typeof io !== 'undefined' ? io() : null;
     const canvas = document.getElementById('gameCanvas');
@@ -353,9 +374,9 @@
     };
 
     audioElements.start.loop = true;
-    audioElements.start.volume = 0.8;
+    audioElements.start.volume = 0.3;
     audioElements.quiz.loop = true;
-    audioElements.quiz.volume = 0.8;
+    audioElements.quiz.volume = 0.5;
 
     function playSound(key) {
       const audio = audioElements[key];
