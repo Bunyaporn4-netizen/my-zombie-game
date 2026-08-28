@@ -58,7 +58,6 @@
       z-index: 5;
     }
 
-    /* หน้าจอ Intro สไตล์ Cinematic */
     #startCountdownModal {
       display: flex;
       position: absolute;
@@ -72,7 +71,6 @@
       border-radius: 12px;
     }
 
-    /* ปุ่มกดเพื่อปลดล็อกเสียงของเบราว์เซอร์ */
     #btnStartGame {
       padding: 14px 32px;
       font-size: 1.4rem;
@@ -101,7 +99,7 @@
       text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(0, 255, 136, 0.6);
       opacity: 0;
       transform: scale(0.8);
-      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     }
 
     #startCountdownText.show {
@@ -133,12 +131,6 @@
       box-shadow: 0 8px 16px rgba(0,0,0,0.5);
       text-align: center;
       border: 2px solid #ff4444;
-    }
-    
-    h2 {
-      margin-top: 0;
-      color: #bb86fc;
-      font-size: 1rem;
     }
 
     .btn-option {
@@ -187,7 +179,6 @@
     <div id="hud">🧟 ซอมบี้ที่จัดการ: <span id="zombieCount">0</span> / 20</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <!-- หน้าจอ Intro สไตล์ Cinematic -->
     <div id="startCountdownModal">
       <button id="btnStartGame" onclick="initAndStartCinematic()">TAP TO START</button>
       <div id="startCountdownText">ARE YOU READY?</div>
@@ -223,7 +214,6 @@
     const bgm = new Audio('/audio/bgm.mp3');
     bgm.loop = true;
     bgm.volume = 0.4;
-    bgm.preload = 'auto';
 
     const readySound = new Audio('/audio/ready.mp3');
     readySound.volume = 0.7;
@@ -322,12 +312,12 @@
       getRandomZombie(H * 0.80, 150)
     ];
 
-    // --- ฟังก์ชันเมื่อผู้ใช้กดปุ่ม TAP TO START เพื่อปลดล็อกระบบเสียง ---
+    // --- ฟังก์ชันปลดล็อกเสียงบนเบราว์เซอร์ ---
     function initAndStartCinematic() {
       document.getElementById('btnStartGame').style.display = 'none';
       document.getElementById('startCountdownText').style.display = 'block';
 
-      // เล่นและหยุดเสียงทันทีเพื่อปลดล็อกสิทธิ์ Audio context บนมือถือ/เบราว์เซอร์
+      // ปลดล็อกระบบเสียงโดยไม่เปิดเสียงทิ้งไว้
       const allAudio = [readySound, shootSound, quizSound, beepSound, startSound, bgm];
       allAudio.forEach(audio => {
         audio.play().then(() => {
@@ -339,43 +329,58 @@
       startCinematicIntro();
     }
 
+    // --- ฟังก์ชัน Intro ที่ซิงค์เสียงกับภาพแบบเป๊ะ 100% ---
     function startCinematicIntro() {
       const el = document.getElementById('startCountdownText');
       const sequence = [
-        { text: "ARE YOU READY?", duration: 1800, color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)" },
-        { text: "THE TIME HAS COME", duration: 1800, color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)" },
-        { text: "LET THE SHOW BEGIN", duration: 1800, color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)" }
+        { text: "ARE YOU READY?", color: "#ffffff", glow: "rgba(0, 255, 136, 0.8)" },
+        { text: "THE TIME HAS COME", color: "#ff4757", glow: "rgba(255, 71, 87, 0.8)" },
+        { text: "LET THE SHOW BEGIN", color: "#ffba00", glow: "rgba(255, 186, 0, 0.9)" }
       ];
 
       let index = 0;
 
-      function showNextText() {
+      function playNextStep() {
         if (index < sequence.length) {
           const item = sequence[index];
           el.innerText = item.text;
           el.style.color = item.color;
           el.style.textShadow = `0 0 15px ${item.color}, 0 0 35px ${item.glow}`;
-          
-          readySound.currentTime = 0;
-          readySound.play().catch(err => console.log("Audio play error:", err));
 
+          // เคลียร์ Event เก่าและรีเซ็ตการเล่นเสียงเดิม
+          readySound.onended = null;
+          readySound.pause();
+          readySound.currentTime = 0;
+
+          // แสดงข้อความ
           el.classList.add('show');
 
-          setTimeout(() => {
+          // เมื่องานเล่นเสียงจบลง ให้ปิดข้อความแล้วเล่นลำดับถัดไป
+          readySound.onended = () => {
             el.classList.remove('show');
             index++;
-            setTimeout(showNextText, 400);
-          }, item.duration);
+            setTimeout(playNextStep, 300);
+          };
+
+          readySound.play().catch(err => {
+            // หากไฟล์เสียงมีปัญหา ให้ข้ามไปตามเวลาสำรอง
+            setTimeout(() => {
+              el.classList.remove('show');
+              index++;
+              setTimeout(playNextStep, 300);
+            }, 1500);
+          });
 
         } else {
           startSound.currentTime = 0;
-          startSound.play().catch(err => console.log("Audio play error:", err));
+          startSound.play().catch(err => console.log(err));
+
           document.getElementById('startCountdownModal').style.display = 'none';
           gameStarted = true;
         }
       }
 
-      showNextText();
+      playNextStep();
     }
 
     function drawCemeteryBackground() {
@@ -652,7 +657,6 @@
       if (socket) socket.emit('submitAnswer', { optionText: topType });
     }
 
-    // เริ่ม Game Loop เรนเดอร์ฉากหลัง
     gameLoop();
   </script>
 </body>
