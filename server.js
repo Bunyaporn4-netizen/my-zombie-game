@@ -7,10 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// เปิดให้ดึงไฟล์จากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// กำหนด Route ไปยังไฟล์ HTML ในโฟลเดอร์ public
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'play.html'));
 });
@@ -23,7 +21,6 @@ app.get('/host.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'host.html'));
 });
 
-// ชุดคำถาม 20 ข้อ
 const questions = [
   {
     id: 1,
