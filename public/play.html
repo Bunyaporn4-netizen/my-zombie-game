@@ -1048,73 +1048,51 @@
       }, 1000);
     }
     function showRanking(userTopType) {
-      // 1. ซ่อน Modal ผลลัพธ์เดิม และเปิด Ranking Modal
       const resultModal = document.getElementById('resultModal');
       if (resultModal) resultModal.style.display = 'none';
 
       const rankingModal = document.getElementById('rankingModal');
-      rankingModal.style.display = 'flex';
+      if (rankingModal) rankingModal.style.display = 'flex';
 
-      // 2. ดึงข้อมูลสถิติเดิมจาก LocalStorage
-      let stats = JSON.parse(localStorage.getItem('quizStats')) || {
-        "สายวิทย์-คณิต": 0,
-        "สายอาชีพ": 0,
-        "สายศิลป์": 0,
-        "สายภาษา": 0
-      };
+      // ดึงข้อมูลจริงจาก localStorage
+      const realStats = JSON.parse(localStorage.getItem('quizStats')) || {};
 
-      // 3. บันทึกผลลัพธ์รอบนี้เพิ่มเข้าไปในสถิติ
-      if (userTopType) {
-        stats[userTopType] = (stats[userTopType] || 0) + 1;
-        localStorage.setItem('quizStats', JSON.stringify(stats));
-      }
+      // คำนวณยอดรวมนักเรียนทั้งหมดที่เคยเล่น
+      const totalStudents = Object.values(realStats).reduce((a, b) => a + b, 0);
+      const totalText = document.getElementById('totalStudentsText');
+      if (totalText) totalText.innerText = totalStudents;
 
-      // 4. คำนวณจำนวนผู้เล่นทั้งหมด
-      const totalStudents = Object.values(stats).reduce((a, b) => a + b, 0);
-      document.getElementById('totalStudentsText').innerText = totalStudents;
-
-      // 5. เรียงลำดับสายเรียนตามจำนวนคนเลือกมากไปน้อย
-      const sortedStats = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
-
-      // 6. วาดรายการและเปอร์เซ็นต์จริงลงใน rankingContainer
+      // ดึงกล่องแสดงผล rankingContainer
       const container = document.getElementById('rankingContainer');
+      if (!container) return;
       container.innerHTML = '';
 
-      const colors = {
-        "สายวิทย์-คณิต": "#ff4444",
-        "สายอาชีพ": "#ffbb00",
-        "สายศิลป์": "#00ff88",
-        "สายภาษา": "#0088ff"
-      };
+      // รายชื่อสายเรียนทั้งหมด
+      const allTypes = ["สายวิทย์-คณิต", "สายอาชีพ", "สายศิลป์", "สายภาษา"];
 
-      sortedStats.forEach((type) => {
-        const count = stats[type];
+      allTypes.forEach((type) => {
+        const count = realStats[type] || 0;
         const percentage = totalStudents > 0 ? ((count / totalStudents) * 100).toFixed(0) : 0;
-        const isUserType = type === userTopType;
-        const barColor = colors[type] || "#00ff88";
+        const isUserType = (type === userTopType);
 
         const item = document.createElement('div');
-        item.style.cssText = `
-          background: #2a2a2a;
-          padding: 10px 15px;
-          border-radius: 8px;
-          border-left: 5px solid ${barColor};
-          ${isUserType ? 'border: 2px solid #ffffff;' : ''}
-        `;
-
+        item.style.cssText = "background: #2a2a2a; margin-bottom: 8px; padding: 10px; border-radius: 8px;";
+        
         item.innerHTML = `
-          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; font-size: 0.95rem;">
+          <div style="display: flex; justify-content: space-between; color: white; font-weight: bold; margin-bottom: 5px;">
             <span>${type} ${isUserType ? '⭐ (ของคุณ)' : ''}</span>
-            <span style="color: ${barColor};">${percentage}% (${count} คน)</span>
+            <span style="color: #00ff88;">${percentage}% (${count} คน)</span>
           </div>
           <div style="background: #444; height: 8px; border-radius: 4px; overflow: hidden;">
-            <div style="background: ${barColor}; width: ${percentage}%; height: 100%; transition: width 0.5s ease;"></div>
+            <div style="background: #00ff88; width: ${percentage}%; height: 100%;"></div>
           </div>
         `;
-
         container.appendChild(item);
       });
     }
+      let stats = JSON.parse(localStorage.getItem('quizStats')) || {};
+      stats[topType] = (stats[topType] || 0) + 1;
+      localStorage.setItem('quizStats', JSON.stringify(stats));
 
       if (socket) {
         socket.emit('submitAnswer', { 
@@ -1126,70 +1104,64 @@
     }
 
     // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
-    function showRankingPage() {
-      document.getElementById('resultModal').style.display = 'none';
+      function showRankingPage() {
+        document.getElementById('resultModal').style.display = 'none';
+        document.getElementById('rankingModal').style.display = 'flex';
 
-      const mockData = [
-        { name: "🔬 สายวิทย์-คณิต", count: 45, color: "#ff4757" },
-        { name: "🛠️ สายอาชีพ", count: 32, color: "#ffa502" },
-        { name: "🎨 สายศิลป์", count: 28, color: "#2ed573" },
-        { name: "🗣️ สายภาษา", count: 19, color: "#1e90ff" }
-      ];
+        // ดึงข้อมูลจริงจาก localStorage
+        const stats = JSON.parse(localStorage.getItem('quizStats')) || {};
+        const totalStudents = Object.values(stats).reduce((a, b) => a + b, 0);
 
-      const total = mockData.reduce((acc, cur) => acc + cur.count, 0);
+        const totalText = document.getElementById('totalStudentsText');
+        if (totalText) totalText.innerText = totalStudents;
 
-      const container = document.getElementById('rankingContainer');
-      container.innerHTML = '';
+        const container = document.getElementById('rankingContainer');
+        if (!container) return;
+        container.innerHTML = '';
 
-      mockData.forEach(item => {
-        const percent = Math.round((item.count / total) * 100);
-        const div = document.createElement('div');
-        div.className = 'ranking-item';
-        div.style.borderLeftColor = item.color;
-        div.innerHTML = `
-          <div style="width: 100%;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem;">
-              <span>${item.name}</span>
-              <span style="color:${item.color}">${percent}%</span>
-            </div>
-            <div class="ranking-bar-bg">
-              <div class="ranking-bar-fill" style="width: ${percent}%; background: ${item.color};"></div>
-            </div>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+        const allTypes = ["สายวิทย์-คณิต", "สายอาชีพ", "สายศิลป์", "สายภาษา"];
+        const colors = {
+          "สายวิทย์-คณิต": "#ff4444",
+          "สายอาชีพ": "#ffa502",
+          "สายศิลป์": "#2ed573",
+          "สายภาษา": "#1e90ff"
+        };
 
-      document.getElementById('rankingModal').style.display = 'flex';
-    }
+        allTypes.forEach((type) => {
+          const count = stats[type] || 0;
+          const percentage = totalStudents > 0 ? ((count / totalStudents) * 100).toFixed(0) : 0;
+          const barColor = colors[type] || "#00ff88";
+
+          const item = document.createElement('div');
+          item.style.cssText = "background: #2a2a2a; margin-bottom: 8px; padding: 10px; border-radius: 8px;";
           
-          // 1. ตรวจสอบว่ามี ?admin=true ใน URL หรือไม่เมื่อโหลดหน้าเว็บ
-window.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  
-  // เช็กว่าพารามิเตอร์ admin มีค่าเป็น true หรือไม่
-  if (urlParams.get('admin') === 'true') {
-    const adminBtn = document.getElementById('btnAdminReset');
-    if (adminBtn) {
-      adminBtn.style.display = 'inline-block'; // สั่งให้ปุ่มแสดงผลเฉพาะแอดมิน
-    }
-  }
-});
-
-// 2. ฟังก์ชันสั่งล้างสถิติสำหรับแอดมิน
-function resetStatsByAdmin() {
-  const confirmReset = confirm("⚠️ ยืนยันการล้างข้อมูลสถิติทั้งหมดหรือไม่?\nข้อมูลสถิติการตอบของผู้เล่นทั้งหมดจะถูกรีเซ็ตเป็น 0");
-  
-  if (confirmReset) {
-    // ลบข้อมูลสถิติที่บันทึกใน LocalStorage
-    localStorage.removeItem('quizStats');
-    
-    alert("✅ ล้างข้อมูลสถิติเรียบร้อยแล้ว!");
-    
-    // โหลดหน้าเว็บใหม่เพื่ออัปเดตหน้าจอ
-    location.reload();
-  }
-}
+          item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; color: white; font-weight: bold; margin-bottom: 5px;">
+              <span>${type}</span>
+              <span style="color: ${barColor};">${percentage}% (${count} คน)</span>
+            </div>
+            <div style="background: #444; height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="background: ${barColor}; width: ${percentage}%; height: 100%;"></div>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      }
+      
+      // 2. ฟังก์ชันสั่งล้างสถิติสำหรับแอดมิน
+      function resetStatsByAdmin() {
+        const confirmReset = confirm("⚠️ ยืนยันการล้างข้อมูลสถิติทั้งหมดหรือไม่?\nข้อมูลสถิติการตอบของผู้เล่นทั้งหมดจะถูกรีเซ็ตเป็น 0");
+        
+        if (confirmReset) {
+          // ลบข้อมูลสถิติที่บันทึกใน LocalStorage
+          localStorage.removeItem('quizStats');
+          
+          alert("✅ ล้างข้อมูลสถิติเรียบร้อยแล้ว!");
+          
+          // โหลดหน้าเว็บใหม่เพื่ออัปเดตหน้าจอ
+          location.reload();
+        }
+      }
     resizeCanvas();
     initZombies();                    
     gameLoop();
