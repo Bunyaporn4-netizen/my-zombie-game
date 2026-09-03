@@ -43,18 +43,17 @@ io.on('connection', (socket) => {
     io.emit('resetTable');
     io.emit('updateStats', calculateStats());
   });
-  
+
   socket.on('submitAnswer', (data) => {
     const playerData = {
       id: socket.id,
       playerName: data.playerName,
       score: data.score,
       resultType: data.optionText,
-      timestamp: new Date().toLocaleString('th-TH')
+      timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
     };
 
     playerResults.push(playerData);
-
     // อัปเดตข้อมูลไปหน้า admin และส่งสถิติใหม่ให้ผู้เล่นทุกคน
     io.emit('updateAdminData', playerResults);
     io.emit('updateStats', calculateStats());
