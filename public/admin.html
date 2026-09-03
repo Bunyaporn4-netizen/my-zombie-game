@@ -118,43 +118,49 @@
     </table>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+      <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
 
-    // ดึงข้อมูลเมื่อเปิดหน้าเว็บ
-    socket.emit('getAdminData');
+      // ดึงข้อมูลเมื่อเปิดหน้าเว็บ
+      socket.emit('getAdminData');
 
-    // ดักรับอัปเดตข้อมูล Real-time
-    socket.on('updateAdminData', (results) => {
-      const tbody = document.getElementById('playerTableBody');
-      document.getElementById('totalPlayers').innerText = results.length;
-
-      if (results.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">ยังไม่มีข้อมูลผู้เล่นในขณะนี้...</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = '';
-      results.forEach((data, index) => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${index + 1}</td>
-            <td style="color: #94a3b8;">${data.timestamp}</td>
-            <td style="font-weight: 600;">${data.playerName}</td>
-            <td style="color: #ffbb00; font-weight: bold;">${data.score} คะแนน</td>
-            <td><span class="badge">${data.resultType}</span></td>
-          </tr>
-        `;
-        // ฟังก์ชันส่งคำสั่งล้างข้อมูลไปที่ Server
-        function resetAllData() {
-          const confirmReset = confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลผู้เล่นและสถิติทั้งหมดเพื่อเริ่มใหม่?");
-          if (confirmReset) {
-            socket.emit('resetData');
-          }
+      // ดักรับอัปเดตข้อมูล Real-time
+      socket.on('updateAdminData', (results) => {
+        const tbody = document.getElementById('playerTableBody');
+        const totalPlayers = document.getElementById('totalPlayers');
+        
+        if (totalPlayers) {
+          totalPlayers.innerText = results.length + ' คน';
         }
+
+        if (!tbody) return;
+
+        if (results.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">ยังไม่มีข้อมูลผู้เล่น</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        results.forEach((data, index) => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${index + 1}</td>
+              <td style="color: #94a3b8;">${data.timestamp}</td>
+              <td style="font-weight: 600;">${data.playerName}</td>
+              <td style="color: #ffbb00; font-weight: bold;">${data.score} คะแนน</td>
+              <td><span class="badge">${data.resultType}</span></td>
+            </tr>
+          `;
+        });
       });
-    });
-  </script>
+
+      // ฟังก์ชันกดปุ่มล้างข้อมูล
+      function resetAllData() {
+        if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลผู้เล่นและสถิติทั้งหมดเพื่อเริ่มใหม่?")) {
+          socket.emit('resetData');
+        }
+      }
+    </script>
 </body>
 </html>
