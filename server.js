@@ -34,6 +34,15 @@ function calculateStats() {
 }
 
 io.on('connection', (socket) => {
+  // เพิ่มการดักรับคำสั่งล้างข้อมูลจากหน้า admin
+  socket.on('resetData', () => {
+    playerResults.length = 0; // ล้างข้อมูลผู้เล่นทั้งหมดเป็นอาร์เรย์ว่าง
+
+    // ส่งข้อมูลว่างเปล่าและสถิติเริ่มต้นกลับไปอัปเดตทุกหน้าจอทันที
+    io.emit('updateAdminData', playerResults);
+    io.emit('updateStats', calculateStats());
+  });
+  
   // บรอดแคสต์สถิติสายเรียนให้ผู้เล่นทุกคนทันทีที่เชื่อมต่อ
   socket.emit('updateStats', calculateStats());
 

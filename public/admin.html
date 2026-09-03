@@ -82,6 +82,15 @@
   </style>
 </head>
 <body>
+  <!-- วางตรงนี้ ด้านบนสุดภายในแท็ก body -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>📊 รายชื่อผู้เล่นและผลประเมินสายเรียน</h2>
+    <button onclick="resetAllData()" style="background-color: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+      🔄 ล้างข้อมูลเริ่มต้นใหม่
+    </button>
+  </div>
+
+  <!-- โค้ดตารางหรือส่วนอื่นๆ ของเดิมใน body -->
 
   <div class="container">
     <header>
@@ -137,6 +146,13 @@
             <td><span class="badge">${data.resultType}</span></td>
           </tr>
         `;
+        // ฟังก์ชันส่งคำสั่งล้างข้อมูลไปที่ Server
+        function resetAllData() {
+          const confirmReset = confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลผู้เล่นและสถิติทั้งหมดเพื่อเริ่มใหม่?");
+          if (confirmReset) {
+            socket.emit('resetData');
+          }
+        }
       });
     });
   </script>
