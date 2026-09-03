@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบสรุปผลข้อมูลผู้เล่น - Zombie Quiz Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Kanit', sans-serif;
+    }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #1e293b;
+    }
+    h1 {
+      color: #00ff88;
+      font-size: 1.8rem;
+    }
+    .stats-card {
+      background: #1e293b;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      border: 1px solid #334155;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    th, td {
+      padding: 14px 18px;
+      text-align: left;
+    }
+    th {
+      background-color: #00ff88;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    tr:nth-child(even) {
+      background-color: #182232;
+    }
+    tr:hover {
+      background-color: #273549;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+      border: 1px solid #00ff88;
+    }
+    .empty-msg {
+      text-align: center;
+      padding: 30px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>📊 รายชื่อผู้เล่นและผลประเมินสายเรียน</h1>
+      <div class="stats-card">
+        👥 ผู้เล่นทั้งหมด: <strong id="totalPlayers" style="color: #00ff88;">0</strong> คน
+      </div>
+    </header>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>เวลา</th>
+          <th>ชื่อ - นามสกุล</th>
+          <th>คะแนนยิงปืน</th>
+          <th>สายเรียนที่เหมาะสม</th>
+        </tr>
+      </thead>
+      <tbody id="playerTableBody">
+        <tr>
+          <td colspan="5" class="empty-msg">ยังไม่มีข้อมูลผู้เล่นในขณะนี้...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // ดึงข้อมูลเมื่อเปิดหน้าเว็บ
+    socket.emit('getAdminData');
+
+    // ดักรับอัปเดตข้อมูล Real-time
+    socket.on('updateAdminData', (results) => {
+      const tbody = document.getElementById('playerTableBody');
+      document.getElementById('totalPlayers').innerText = results.length;
+
+      if (results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">ยังไม่มีข้อมูลผู้เล่นในขณะนี้...</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      results.forEach((data, index) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${index + 1}</td>
+            <td style="color: #94a3b8;">${data.timestamp}</td>
+            <td style="font-weight: 600;">${data.playerName}</td>
+            <td style="color: #ffbb00; font-weight: bold;">${data.score} คะแนน</td>
+            <td><span class="badge">${data.resultType}</span></td>
+          </tr>
+        `;
+      });
+    });
+  </script>
+</body>
+</html>

@@ -344,7 +344,7 @@
 
     <div id="nameInputModal">
       <div class="input-box">
-        <h2>🎮 ต้อนรับผู้ลุยซอมบี้</h2>
+        <h2>🎮 ต้อนรับผู้ลุยอนาคต</h2>
         <p style="font-size: 0.9rem; color: #aaa;">กรุณากรอกชื่อ-นามสกุลก่อนเข้าสู่เกม</p>
         <input type="text" id="playerNameInput" placeholder="ระบุชื่อ - นามสกุลของคุณ" maxlength="40">
         <button class="btn-main" onclick="submitPlayerName()">ตกลง</button>
@@ -463,7 +463,7 @@
     function submitPlayerName() {
       const input = document.getElementById('playerNameInput').value.trim();
       if (!input) {
-        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกมครับ!");
+        alert("กรุณากรอกชื่อ-นามสกุลก่อนเริ่มเล่นเกม!");
         return;
       }
       playerName = input;
@@ -700,10 +700,10 @@
     }));
 
     const zombieSpecs = [
-      { imgIndex: 0, w: 65, h: 85,  speed: 5.5 },
-      { imgIndex: 1, w: 60, h: 75,  speed: 5.5 },
-      { imgIndex: 2, w: 105, h: 120, speed: 5.5 },
-      { imgIndex: 3, w: 75, h: 95, speed: 5.5 }
+      { imgIndex: 0, w: 55, h: 65,  speed: 5.5 },
+      { imgIndex: 1, w: 95, h: 120,  speed: 5.5 },
+      { imgIndex: 2, w: 65, h: 70, speed: 5.5 },
+      { imgIndex: 3, w: 65, h: 75, speed: 5.5 }
     ];
 
     function getRandomZombie(laneY, extraDelay = 0) {
@@ -1024,7 +1024,7 @@
 
       document.getElementById('resultModal').style.display = 'flex';
 
-      let timeLeft = 10;
+      let timeLeft = 5;
       const timerEl = document.getElementById('timerText');
 
       const countdown = setInterval(() => {
@@ -1055,7 +1055,7 @@
       const resultBox = document.getElementById('result-box');
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 ไลฟ์สไตล์ที่เหมาะสมกับคุณคือ: ${topType}</h3>
+        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 สายการเรียนที่เหมาะสมกับคุณคือ: ${topType}</h3>
         <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
         <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
         <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
