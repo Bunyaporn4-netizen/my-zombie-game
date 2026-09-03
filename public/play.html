@@ -326,6 +326,14 @@
       width: 0%;
       transition: width 0.5s ease;
     }
+
+    /* ป้องกันการกดรัวแล้วหน้าจอขยายหรือค้าง */
+    button, canvas {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
@@ -376,7 +384,7 @@
     <div id="rankingModal" class="modal">
       <div class="modal-content">
         <h2>📊 สถิติการเลือกสายเรียน</h2>
-        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปสัดส่วนอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
+        <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">สรุปอันดับสายเรียนที่ถูกเลือกมากที่สุด</p>
         
         <div id="rankingContainer" class="ranking-list"></div>
 
@@ -441,7 +449,7 @@
       if (audio) {
         if (key === 'shoot') {
           const shootClone = audio.cloneNode();
-          shootClone.volume = 0.5;
+          shootClone.volume = 0.4;
           shootClone.currentTime = 0;
           shootClone.play().catch(e => console.warn(e));
         } else {
@@ -703,7 +711,7 @@
       { imgIndex: 0, w: 55, h: 65,  speed: 5.5 },
       { imgIndex: 1, w: 95, h: 120,  speed: 5.5 },
       { imgIndex: 2, w: 65, h: 70, speed: 5.5 },
-      { imgIndex: 3, w: 65, h: 75, speed: 5.5 }
+      { imgIndex: 3, w: 65, h: 65, speed: 5.5 }
     ];
 
     function getRandomZombie(laneY, extraDelay = 0) {
@@ -1121,6 +1129,19 @@
 
         document.getElementById('rankingModal').style.display = 'flex';
       }
+
+    function selectAnswer(buttonElement) {
+      // ป้องกันการกดซ้ำถ้าระบบกำลังประมวลผล
+      if (buttonElement.disabled) return;
+      buttonElement.disabled = true;
+
+      // โค้ดส่งคำตอบเดิมของคุณ...
+      
+      // ปลดล็อกปุ่มหลังจากผ่านไป 300ms
+      setTimeout(() => {
+        buttonElement.disabled = false;
+      }, 300);
+    }
     resizeCanvas();
     initZombies();
     gameLoop();
