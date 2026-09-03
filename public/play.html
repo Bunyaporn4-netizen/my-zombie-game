@@ -1076,43 +1076,51 @@
     }
 
     // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
-    function showRankingPage() {
-      document.getElementById('resultModal').style.display = 'none';
+    // ดักรับสถิติจริงที่ส่งมาจาก Server
+      let currentStats = {
+        "สายวิทย์-คณิต": 0,
+        "สายอาชีพ": 0,
+        "สายศิลป์": 0,
+        "สายภาษา": 0
+      };
 
-      const mockData = [
-        { name: "🔬 สายวิทย์-คณิต", count: 45, color: "#ff4757" },
-        { name: "🛠️ สายอาชีพ", count: 32, color: "#ffa502" },
-        { name: "🎨 สายศิลป์", count: 28, color: "#2ed573" },
-        { name: "🗣️ สายภาษา", count: 19, color: "#1e90ff" }
-      ];
+      if (typeof socket !== 'undefined') {
+        socket.on('updateStats', (stats) => {
+          currentStats = stats;
+        });
+      }
 
-      const total = mockData.reduce((acc, cur) => acc + cur.count, 0);
+      function showRankingPage() {
+        document.getElementById('resultModal').style.display = 'none';
 
-      const container = document.getElementById('rankingContainer');
-      container.innerHTML = '';
+        const container = document.getElementById('rankingContainer');
+        container.innerHTML = '';
 
-      mockData.forEach(item => {
-        const percent = Math.round((item.count / total) * 100);
-        const div = document.createElement('div');
-        div.className = 'ranking-item';
-        div.style.borderLeftColor = item.color;
-        div.innerHTML = `
-          <div style="width: 100%;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem;">
+        const categories = [
+          { name: "🔬 สายวิทย์-คณิต", key: "สายวิทย์-คณิต", color: "#ff4757" },
+          { name: "🛠️ สายอาชีพ", key: "สายอาชีพ", color: "#ffa502" },
+          { name: "🎨 สายศิลป์", key: "สายศิลป์", color: "#2ed573" },
+          { name: "🗣️ สายภาษา", key: "สายภาษา", color: "#1e90ff" }
+        ];
+
+        categories.forEach(item => {
+          const percent = currentStats[item.key] || 0;
+          const div = document.createElement('div');
+          div.className = 'ranking-item';
+          div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
               <span>${item.name}</span>
-              <span style="color:${item.color}">${percent}%</span>
+              <strong>${percent}%</strong>
             </div>
-            <div class="ranking-bar-bg">
-              <div class="ranking-bar-fill" style="width: ${percent}%; background: ${item.color};"></div>
+            <div style="background:#333; height:10px; border-radius:5px; overflow:hidden;">
+              <div style="background:${item.color}; width:${percent}%; height:100%;"></div>
             </div>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+          `;
+          container.appendChild(div);
+        });
 
-      document.getElementById('rankingModal').style.display = 'flex';
-    }
-
+        document.getElementById('rankingModal').style.display = 'flex';
+      }
     resizeCanvas();
     initZombies();
     gameLoop();
