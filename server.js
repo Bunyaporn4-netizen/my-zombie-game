@@ -46,7 +46,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('submitAnswer', (data) => {
-    // กำหนดค่าตัวแปรให้รองรับทุกชื่อที่หน้าเล่นส่งมา
     const playerData = {
         id: socket.id,
         playerName: data.playerName || data.name || "ไม่ระบุชื่อ",
@@ -57,9 +56,8 @@ io.on('connection', (socket) => {
 
     playerResults.push(playerData);
 
-    // ส่งข้อมูลเข้า Google Sheets
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwbD4WzbcKhNS8G1p3PFNQZmnpjXgVsJBIE2byIKig-WOxVGfIGwCehLNbfVxzszpa5/exec";
-    
+
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
