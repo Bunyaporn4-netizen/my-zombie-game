@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
     playerResults.push(playerData);
 
     // ส่งข้อมูลเข้า Google Sheets
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyIfaXYUQQ41FbTJCf3ul8RX03DMJvijtu-FoqMbClkLXP8L41y6t74dtQaTuHucbj5tw/exec"; // ใช้ URL เดิมของคุณ
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwbD4WzbcKhNS8G1p3PFNQZmnpjXgVsJBIE2byIKig-WOxVGfIGwCehLNbfVxzszpa5/exec";
     
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
