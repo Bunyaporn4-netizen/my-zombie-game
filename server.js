@@ -6,64 +6,64 @@ const io = require('socket.io')(http);
 
 app.use(express.static('public'));
 
-// อาร์เรย์สำหรับเก็บข้อมูลผู้เล่นทั้งหมด
 const playerResults = [];
 
-// ฟังก์ชันคำนวณเปอร์เซ็นต์สายเรียนจริง
 function calculateStats() {
-  const total = playerResults.length;
-  if (total === 0) {
-    return { "สายวิทย์-คณิต": 25, "สายอาชีพ": 25, "สายศิลป์": 25, "สายภาษา": 25 };
-  }
+    const total = playerResults.length;
+    if (total === 0) {
+        return { "สายวิทย์-คณิต": 25, "สายอาชีพ": 25, "สายศิลป์": 25, "สายภาษา": 25 };
+    }
 
-  const counts = { "สายวิทย์-คณิต": 0, "สายอาชีพ": 0, "สายศิลป์": 0, "สายภาษา": 0 };
-  
-  playerResults.forEach(p => {
-    // เทียบข้อความสายเรียน
-    if (p.resultType.includes("วิทย์") || p.resultType.includes("คณิต")) counts["สายวิทย์-คณิต"]++;
-    else if (p.resultType.includes("อาชีพ")) counts["สายอาชีพ"]++;
-    else if (p.resultType.includes("ศิลป์")) counts["สายศิลป์"]++;
-    else if (p.resultType.includes("ภาษา")) counts["สายภาษา"]++;
-  });
+    const counts = { "สายวิทย์-คณิต": 0, "สายอาชีพ": 0, "สายศิลป์": 0, "สายภาษา": 0 };
 
-  return {
-    "สายวิทย์-คณิต": Math.round((counts["สายวิทย์-คณิต"] / total) * 100),
-    "สายอาชีพ": Math.round((counts["สายอาชีพ"] / total) * 100),
-    "สายศิลป์": Math.round((counts["สายศิลป์"] / total) * 100),
-    "สายภาษา": Math.round((counts["สายภาษา"] / total) * 100)
-  };
+    playerResults.forEach(p => {
+        if (p.resultType.includes("วิทย์") || p.resultType.includes("คณิต")) counts["สายวิทย์-คณิต"]++;
+        else if (p.resultType.includes("อาชีพ")) counts["สายอาชีพ"]++;
+        else if (p.resultType.includes("ศิลป์")) counts["สายศิลป์"]++;
+        else if (p.resultType.includes("ภาษา")) counts["สายภาษา"]++;
+    });
+
+    return {
+        "สายวิทย์-คณิต": Math.round((counts["สายวิทย์-คณิต"] / total) * 100),
+        "สายอาชีพ": Math.round((counts["สายอาชีพ"] / total) * 100),
+        "สายศิลป์": Math.round((counts["สายศิลป์"] / total) * 100),
+        "สายภาษา": Math.round((counts["สายภาษา"] / total) * 100)
+    };
 }
 
 io.on('connection', (socket) => {
-  // เพิ่มการดักรับคำสั่งล้างข้อมูลจากหน้า admin
-  socket.on('resetData', () => {
-    playerResults.length = 0; // ล้างข้อมูลอาร์เรย์ทั้งหมด
+    socket.on('resetData', () => {
+        playerResults.length = 0;
+        io.emit('updateAdminData', []);
+        io.emit('resetTable');
+        io.emit('updateStats', calculateStats());
+    });
 
-    // ส่งข้อมูลว่างเปล่า และส่งสัญญาณ resetTable ไปอัปเดตตาราง
-    io.emit('updateAdminData', []);
-    io.emit('resetTable');
-    io.emit('updateStats', calculateStats());
-  });
+    socket.on('submitAnswer', (data) => {
+        const playerData = {
+            id: socket.id,
+            playerName: data.playerName || data.name || "ไม่ระบุชื่อ",
+            score: data.score || 0,
+            resultType: data.resultType || data.optionText || "ทั่วไป",
+            timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
+        };
 
-  socket.on('submitAnswer', (data) => {
-    const playerData = {
-        id: socket.id,
-        playerName: data.playerName || data.name || "ไม่ระบุชื่อ",
-        score: data.score || 0,
-        resultType: data.resultType || data.optionText || "ทั่วไป",
-        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
-    };
+        playerResults.push(playerData);
 
-    playerResults.push(playerData);
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwbD4WzbcKhNS8G1p3PFNQZmnpjXgVsJBIE2byIKig-WOxVGfIGwCehLNbfVxzszpa5/exec";
+        
+        fetch(GOOGLE_SHEET_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(playerData)
+        }).catch(err => console.error("Error saving to Google Sheets:", err));
 
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwbD4WzbcKhNS8G1p3PFNQZmnpjXgVsJBIE2byIKig-WOxVGfIGwCehLNbfVxzszpa5/exec";
+        io.emit('updateAdminData', playerResults);
+        io.emit('updateStats', calculateStats());
+    });
+});
 
-    fetch(GOOGLE_SHEET_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(playerData)
-    }).catch(err => console.error("Error saving to Google Sheets:", err));
-
-    io.emit('updateAdminData', playerResults);
-    io.emit('updateStats', calculateStats());
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
