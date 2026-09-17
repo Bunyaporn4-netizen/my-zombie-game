@@ -46,25 +46,25 @@ io.on('connection', (socket) => {
 
   socket.on('submitAnswer', (data) => {
     const playerData = {
-      id: socket.id,
-      playerName: data.playerName,
-      score: data.score,
-      resultType: data.optionText,
-      timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+        id: socket.id,
+        playerName: data.playerName,
+        score: data.score,
+        resultType: data.optionText,
+        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
     };
 
     playerResults.push(playerData);
-    // อัปเดตข้อมูลไปหน้า admin และส่งสถิติใหม่ให้ผู้เล่นทุกคน
+
+    // === แทรกโค้ดส่งเข้า Google Sheets ตรงนี้ ===
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbylfaXYUQQ41FbTJCf3uI8RX03DMJvijtu-FoqMbClkLXP8L41y6t74dtQaTuHucbj5tw/exec";
+    
+    fetch(GOOGLE_SHEET_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(playerData)
+    }).catch(err => console.error("Error saving to Google Sheets:", err));
+    // ============================================
+
     io.emit('updateAdminData', playerResults);
     io.emit('updateStats', calculateStats());
-  });
-
-  socket.on('getAdminData', () => {
-    socket.emit('updateAdminData', playerResults);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
