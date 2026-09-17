@@ -46,25 +46,25 @@ io.on('connection', (socket) => {
   });
 
   socket.on('submitAnswer', (data) => {
+    // กำหนดค่าตัวแปรให้รองรับทุกชื่อที่หน้าเล่นส่งมา
     const playerData = {
         id: socket.id,
-        playerName: data.playerName,
-        score: data.score,
-        resultType: data.optionText,
+        playerName: data.playerName || data.name || "ไม่ระบุชื่อ",
+        score: data.score || 0,
+        resultType: data.resultType || data.optionText || "ทั่วไป",
         timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
     };
 
     playerResults.push(playerData);
 
-    // === แทรกโค้ดส่งเข้า Google Sheets ตรงนี้ ===
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbylfaXYUQQ41FbTJCf3uI8RX03DMJvijtu-FoqMbClkLXP8L41y6t74dtQaTuHucbj5tw/exec";
+    // ส่งข้อมูลเข้า Google Sheets
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyIfaXYUQQ41FbTJCf3ul8RX03DMJvijtu-FoqMbClkLXP8L41y6t74dtQaTuHucbj5tw/exec"; // ใช้ URL เดิมของคุณ
     
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(playerData)
     }).catch(err => console.error("Error saving to Google Sheets:", err));
-    // ============================================
 
     io.emit('updateAdminData', playerResults);
     io.emit('updateStats', calculateStats());
