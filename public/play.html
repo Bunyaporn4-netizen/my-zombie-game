@@ -1046,44 +1046,33 @@
     }
 
     function showFinalResult() {
-  // 1. ซ่อนหน้าต่างโหลดประมวลผลทั้งหมด
-  const loadingModal = document.getElementById('loadingModal') || document.querySelector('.loading-modal');
-  if (loadingModal) {
-    loadingModal.style.display = 'none';
-  }
+      document.getElementById('timerText').style.display = 'none';
 
-  // 2. แสดงหน้าสรุปผลลัพธ์ทันที (หน้าที่มีชื่อผู้เล่น + คะแนน + สายเรียน)
-  const resultModal = document.getElementById('resultModal');
-  if (resultModal) {
-    resultModal.style.display = 'flex';
-  }
+      const counts = {};
+      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
 
-  // 3. ส่งข้อมูลเข้า Google Sheets ตามปกติ
-  if (typeof socket !== 'undefined') {
-    socket.emit('submitAnswer', {
-      playerName: typeof playerName !== 'undefined' ? playerName : "Guest",
-      score: typeof score !== 'undefined' ? score : 0,
-      resultType: typeof finalResultType !== 'undefined' ? finalResultType : "ศิลป์-สังคม"
-    });
-  }
-}
+      let topType = "";
+      let maxCount = 0;
+      for (let t in counts) {
+        if (counts[t] > maxCount) {
+          maxCount = counts[t];
+          topType = t;
+        }
+      }
 
-      const resultBox = document.getElementById('resultBox') || document.getElementById('result-box');
-    if (resultBox) {
+      const resultBox = document.getElementById('result-box');
       resultBox.style.display = 'block';
       resultBox.innerHTML = `
         <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 สายการเรียนที่เหมาะสมกับคุณคือ: ${topType}</h3>
-        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${typeof playerName !== 'undefined' ? playerName : 'Admin'}</p>
-        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${typeof score !== 'undefined' ? score : 0} คะแนน</p>
-        <p style="margin-bottom:15px; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบเรียบร้อยแล้ว!</p>
-        
+        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
+        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
+        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+
+        <!-- ปุ่ม NEXT -->
         <div style="text-align: center;">
-          <button class="btn-next" onclick="location.reload()" style="background-color: #00e676; color: #000; font-weight: bold; padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; font-size: 1rem;">
-            🔄 เล่นใหม่อีกครั้ง
-          </button>
+          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
         </div>
       `;
-    }
 
       if (socket) {
         socket.emit('submitAnswer', { 
@@ -1092,6 +1081,7 @@
           optionText: topType 
         });
       }
+    }
 
     // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
     // ดักรับสถิติจริงที่ส่งมาจาก Server
