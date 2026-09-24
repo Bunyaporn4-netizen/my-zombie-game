@@ -1111,21 +1111,19 @@
           { name: "🗣️ สายภาษา", key: "สายภาษา", color: "#1e90ff" }
         ];
 
-        categories.forEach(item => {
-          const percent = currentStats[item.key] || 0;
-          const div = document.createElement('div');
-          div.className = 'ranking-item';
-          div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-              <span>${item.name}</span>
-              <strong>${percent}%</strong>
-            </div>
-            <div style="background:#333; height:10px; border-radius:5px; overflow:hidden;">
-              <div style="background:${item.color}; width:${percent}%; height:100%;"></div>
-            </div>
-          `;
-          container.appendChild(div);
+          categories.forEach(item => {
+            const count = currentStats[item.key] || 0;
+            const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+
+            const div = document.createElement('div');
+            div.className = 'ranking-item';
+            div.innerHTML = `
+                <span>${item.icon} ${item.name}</span>
+                <span id="${item.key}-percent">${percent}%</span>
+            `;
+            // ... โค้ดส่วนสร้าง background bar ด้านล่างต่อตามเดิม ...
         });
+          container.appendChild(div);
 
         document.getElementById('rankingModal').style.display = 'flex';
       }
@@ -1145,31 +1143,32 @@
     resizeCanvas();
     initZombies();
     gameLoop();
-    socket.on('updateStats', function(stats) {
-    // คำนวณหาผลรวมจำนวนคนทั้งหมดจากทุกสาย
+    socket.on('updatestats', function(stats) {
+    // เก็บสถิติไว้ใช้Global ถ้าต้องการ
+    window.currentStats = stats;
+
     const total = (stats['วิทย์-คณิต'] || 0) + 
                   (stats['สายอาชีพ'] || 0) + 
                   (stats['สายศิลป์'] || 0) + 
                   (stats['สายภาษา'] || 0);
 
-    // ป้องกันการหารด้วย 0 กรณีที่ยังไม่มีใครเล่นเลย
     const mathPercent = total > 0 ? Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100) : 0;
     const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
     const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
     const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
-    updateStatText("สายวิทย์-คณิต", mathPercent);
-    updateStatText("สายอาชีพ", vocPercent);
-    updateStatText("สายศิลป์", artPercent);
-    updateStatText("สายภาษา", langPercent);
-  });
 
+    // อัปเดตตัวเลขเปอร์เซ็นต์ผ่าน ID โดยตรง
+    if(document.getElementById('วิทย์-คณิต-percent')) document.getElementById('วิทย์-คณิต-percent').innerText = mathPercent + '%';
+    if(document.getElementById('สายอาชีพ-percent')) document.getElementById('สายอาชีพ-percent').innerText = vocPercent + '%';
+    if(document.getElementById('สายศิลป์-percent')) document.getElementById('สายศิลป์-percent').innerText = artPercent + '%';
+    if(document.getElementById('สายภาษา-percent')) document.getElementById('สายภาษา-percent').innerText = langPercent + '%';
+});
   function updateStatText(label, percent) {
     const elements = document.querySelectorAll('div, p, span');
     elements.forEach(el => {
         if (el.children.length === 0 && el.innerText.includes(label)) {
-            // ตัดตัวเลข, เปอร์เซ็นต์ หรือเครื่องหมาย % ที่ติดมาให้ออกให้หมด เพื่อเอาเฉพาะชื่อสายเรียน
-            let cleanLabel = el.innerText.replace(/[\d%]/g, '').trim();
-            // ป้องกันกรณีชื่อซ้ำซ้อน ให้ใช้ label หลักแทนถ้าต้องการความชัวร์
+            // แทนที่เฉพาะข้อความที่เป็นตัวเลขเปอร์เซ็นต์เก่า (เช่น 0%, 33% ฯลฯ) ให้เป็นเปอร์เซ็นต์ใหม่
+            // หรือถ้าโครงสร้างข้อความรวมกัน ให้ดึงชื่อสาย + เปอร์เซ็นต์ใหม่เข้าไปตรงๆ โดยเคลียร์ค่าเก่าทิ้ง
             el.innerText = `${label} ${percent}%`;
         }
     });
