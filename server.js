@@ -14,7 +14,7 @@ let globalStats = {
     "สายภาษา": 25
 };
 
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwbD4WzbcKhNS8G1p3PFNQZmnpjXgVsJBIE2byIKig-WOxVGfIGwCehLNbfVxzszpa5/exec";
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyp4sHO8W5idT31zmaib5r2zU3UNU0qMyJH8-YLwV7yYGslZ0U28225abtdtUo8TjKHEQ/exec";
 
 // ดึงสถิติล่าสุดจาก Google Sheets เมื่อเซิร์ฟเวอร์เริ่มทำงานหรือตื่นขึ้นมา
 function fetchLatestStats() {
