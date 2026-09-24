@@ -1032,32 +1032,41 @@
 
       document.getElementById('resultModal').style.display = 'flex';
 
-      let timeLeft = 5;
-      const timerEl = document.getElementById('timerText');
+     let timeLeft = 5;
+const timerEl = document.getElementById('timerText');
+}
+const countdown = setInterval(() => {
+  timeLeft--;
+  if (timerEl) {
+    timerEl.innerText = timeLeft;
+  }
 
-      const countdown = setInterval(() => {
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          showFinalResult();
-        }
-      }, 1000);
-    }
+  if (timeLeft <= 0) {
+    clearInterval(countdown); // หยุดนับถอยหลัง
+    showFinalResult();       // รันฟังก์ชันแสดงผลลัพธ์
+  }
+}, 1000);
 
-    function showFinalResult() {
-  // 1. กำหนดข้อมูลพื้นฐานของแต่ละสาย
+    // ฟังก์ชันจบเกมและสรุปอันดับแนวโน้ม
+function showFinalResult() {
+  // 1. ซ่อนหน้า Modal กำลังประมวลผล (แก้ปัญหาหน้าค้าง)
+  const loadingModal = document.getElementById('loadingModal') || document.querySelector('.loading-modal');
+  if (loadingModal) {
+    loadingModal.style.display = 'none';
+  }
+
+  // 2. กำหนดสายเรียน
   const categories = [
-    { name: "สายวิทย์-คณิต", icon: "🔬", key: "วิทย์" },
-    { name: "สายอาชีพ",      icon: "🔧", key: "อาชีพ" },
-    { name: "สายศิลป์",      icon: "🎨", key: "ศิลป์" },
-    { name: "สายภาษา",      icon: "ภาษา" }
+    { name: "สายวิทย์-คณิต", icon: "🔬" },
+    { name: "สายอาชีพ",      icon: "🔧" },
+    { name: "สายศิลป์",      icon: "🎨" },
+    { name: "สายภาษา",      icon: "🗣️" }
   ];
 
-  // 2. นับจำนวนข้อที่ผู้เล่นเลือกในแต่ละสาย (อ้างอิงจากอาร์เรย์ selectedTypes ที่ผู้เล่นกด)
+  // 3. คำนวณคำตอบที่ผู้เล่นเลือกจริง
   const counts = { "สายวิทย์-คณิต": 0, "สายอาชีพ": 0, "สายศิลป์": 0, "สายภาษา": 0 };
   
-  if (Array.isArray(selectedTypes)) {
+  if (typeof selectedTypes !== 'undefined' && Array.isArray(selectedTypes)) {
     selectedTypes.forEach(type => {
       if (type.includes("วิทย์")) counts["สายวิทย์-คณิต"]++;
       else if (type.includes("อาชีพ")) counts["สายอาชีพ"]++;
@@ -1066,40 +1075,39 @@
     });
   }
 
-  // 3. นำข้อมูลมาจัดอันดับจาก มากไปหาน้อย (Sort by Score)
+  // 4. จัดอันดับจากมากไปหาน้อย
   const sortedCategories = categories.map(cat => ({
     ...cat,
     score: counts[cat.name] || 0
   })).sort((a, b) => b.score - a.score);
 
-  // 4. แสดงผลอันดับเรียงตามแนวโน้มการตอบ (อันดับ 1 ถึง 4)
+  // 5. แสดงผลอันดับ 1 - 4 บนหน้าจอ
   const rankingIds = [
-    'สายวิทย์-คณิต-percent', // แถวที่ 1 (อันดับ 1)
-    'สายอาชีพ-percent',       // แถวที่ 2 (อันดับ 2)
-    'สายศิลป์-percent',       // แถวที่ 3 (อันดับ 3)
-    'สายภาษา-percent'        // แถวที่ 4 (อันดับ 4)
+    'สายวิทย์-คณิต-percent',
+    'สายอาชีพ-percent',
+    'สายศิลป์-percent',
+    'สายภาษา-percent'
   ];
 
   sortedCategories.forEach((item, index) => {
     const targetEl = document.getElementById(rankingIds[index]);
     if (targetEl) {
-      // แสดง: [ไอคอน] [ชื่อสาย] - เลือก [X] ข้อ (อันดับที่ N)
       targetEl.innerText = `อันดับ ${index + 1}: ${item.icon} ${item.name} (${item.score} ข้อ)`;
     }
   });
 
-  // 5. แสดง Modal ผลลัพธ์
+  // 6. แสดง Modal ผลลัพธ์อันดับ
   const resultModal = document.getElementById('resultModal');
   if (resultModal) {
     resultModal.style.display = 'flex';
   }
 
-  // 6. ส่งข้อมูลเฉพาะผลสรุปอันดับ 1 ไป Google Sheets ตามปกติ
+  // 7. ส่งข้อมูลสายอันดับ 1 เข้า Google Sheets
   if (typeof socket !== 'undefined') {
     socket.emit('submitAnswer', {
-      playerName: playerName || "Guest",
-      score: score,
-      resultType: sortedCategories[0].name // ส่งสายที่ได้อันดับ 1 เข้า Sheets
+      playerName: typeof playerName !== 'undefined' ? playerName : "Guest",
+      score: typeof score !== 'undefined' ? score : 0,
+      resultType: sortedCategories[0].name
     });
   }
 }
