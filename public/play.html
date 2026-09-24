@@ -1146,12 +1146,17 @@
     initZombies();
     gameLoop();
     socket.on('updateStats', function(stats) {
-    const total = stats.total || 1;
-    const mathPercent = Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100);
-    const vocPercent = Math.round(((stats['สายอาชีพ'] || 0) / total) * 100);
-    const artPercent = Math.round(((stats['สายศิลป์'] || 0) / total) * 100);
-    const langPercent = Math.round(((stats['สายภาษา'] || 0) / total) * 100);
+    // คำนวณหาผลรวมจำนวนคนทั้งหมดจากทุกสาย
+    const total = (stats['วิทย์-คณิต'] || 0) + 
+                  (stats['สายอาชีพ'] || 0) + 
+                  (stats['สายศิลป์'] || 0) + 
+                  (stats['สายภาษา'] || 0);
 
+    // ป้องกันการหารด้วย 0 กรณีที่ยังไม่มีใครเล่นเลย
+    const mathPercent = total > 0 ? Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100) : 0;
+    const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
+    const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
+    const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
     updateStatText("สายวิทย์-คณิต", mathPercent);
     updateStatText("สายอาชีพ", vocPercent);
     updateStatText("สายศิลป์", artPercent);
