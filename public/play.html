@@ -1046,58 +1046,63 @@
     }
 
     function showFinalResult() {
-      document.getElementById('timerText').style.display = 'none';
+  // 1. กำหนดข้อมูลพื้นฐานของแต่ละสาย
+  const categories = [
+    { name: "สายวิทย์-คณิต", icon: "🔬", key: "วิทย์" },
+    { name: "สายอาชีพ",      icon: "🔧", key: "อาชีพ" },
+    { name: "สายศิลป์",      icon: "🎨", key: "ศิลป์" },
+    { name: "สายภาษา",      icon: "ภาษา" }
+  ];
 
-      const counts = {};
-      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+  // 2. นับจำนวนข้อที่ผู้เล่นเลือกในแต่ละสาย (อ้างอิงจากอาร์เรย์ selectedTypes ที่ผู้เล่นกด)
+  const counts = { "สายวิทย์-คณิต": 0, "สายอาชีพ": 0, "สายศิลป์": 0, "สายภาษา": 0 };
+  
+  if (Array.isArray(selectedTypes)) {
+    selectedTypes.forEach(type => {
+      if (type.includes("วิทย์")) counts["สายวิทย์-คณิต"]++;
+      else if (type.includes("อาชีพ")) counts["สายอาชีพ"]++;
+      else if (type.includes("ศิลป์")) counts["สายศิลป์"]++;
+      else if (type.includes("ภาษา")) counts["สายภาษา"]++;
+    });
+  }
 
-      let topType = "";
-      let maxCount = 0;
-      for (let t in counts) {
-        if (counts[t] > maxCount) {
-          maxCount = counts[t];
-          topType = t;
-        }
-      }
+  // 3. นำข้อมูลมาจัดอันดับจาก มากไปหาน้อย (Sort by Score)
+  const sortedCategories = categories.map(cat => ({
+    ...cat,
+    score: counts[cat.name] || 0
+  })).sort((a, b) => b.score - a.score);
 
-      const resultBox = document.getElementById('result-box');
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = `
-        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 สายการเรียนที่เหมาะสมกับคุณคือ: ${topType}</h3>
-        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
-        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
-        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+  // 4. แสดงผลอันดับเรียงตามแนวโน้มการตอบ (อันดับ 1 ถึง 4)
+  const rankingIds = [
+    'สายวิทย์-คณิต-percent', // แถวที่ 1 (อันดับ 1)
+    'สายอาชีพ-percent',       // แถวที่ 2 (อันดับ 2)
+    'สายศิลป์-percent',       // แถวที่ 3 (อันดับ 3)
+    'สายภาษา-percent'        // แถวที่ 4 (อันดับ 4)
+  ];
 
-        <!-- ปุ่ม NEXT -->
-        <div style="text-align: center;">
-          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
-        </div>
-      `;
-
-      if (socket) {
-        socket.emit('submitAnswer', { 
-          playerName: playerName,
-          score: score,
-          optionText: topType 
-        });
-      }
+  sortedCategories.forEach((item, index) => {
+    const targetEl = document.getElementById(rankingIds[index]);
+    if (targetEl) {
+      // แสดง: [ไอคอน] [ชื่อสาย] - เลือก [X] ข้อ (อันดับที่ N)
+      targetEl.innerText = `อันดับ ${index + 1}: ${item.icon} ${item.name} (${item.score} ข้อ)`;
     }
+  });
 
-    // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
-    // ดักรับสถิติจริงที่ส่งมาจาก Server
-      let currentStats = {
-        "สายวิทย์-คณิต": 0,
-        "สายอาชีพ": 0,
-        "สายศิลป์": 0,
-        "สายภาษา": 0
-      };
+  // 5. แสดง Modal ผลลัพธ์
+  const resultModal = document.getElementById('resultModal');
+  if (resultModal) {
+    resultModal.style.display = 'flex';
+  }
 
-      if (typeof socket !== 'undefined') {
-        socket.on('updateStats', (stats) => {
-          currentStats = stats;
-        });
-      }
-
+  // 6. ส่งข้อมูลเฉพาะผลสรุปอันดับ 1 ไป Google Sheets ตามปกติ
+  if (typeof socket !== 'undefined') {
+    socket.emit('submitAnswer', {
+      playerName: playerName || "Guest",
+      score: score,
+      resultType: sortedCategories[0].name // ส่งสายที่ได้อันดับ 1 เข้า Sheets
+    });
+  }
+}
       function showRankingPage() {
         document.getElementById('resultModal').style.display = 'none';
 
