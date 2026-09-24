@@ -1173,11 +1173,10 @@
   function updateStatText(label, percent) {
   const elements = document.querySelectorAll('div, p, span');
   elements.forEach(el => {
-    // เลือกเฉพาะกล่องที่มีชื่อสายเรียนนั้นๆ
     if (el.children.length === 0 && el.innerText.includes(label)) {
-      // 1. ดึงเฉพาะข้อความส่วนที่เป็นชื่อสาย (ลบตัวเลขและ % ออกทั้งหมด)
+      // ดึงเฉพาะไอคอนและข้อความชื่อสาย (ลบตัวเลขและ % ทิ้งทั้งหมด)
       let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
-      // 2. เขียนข้อความใหม่เข้าไปแทนที่แบบคลีนๆ
+      // ใส่เปอร์เซ็นต์ใหม่แบบคลีนๆ
       el.innerText = `${cleanLabel} ${percent}%`;
     }
   });
