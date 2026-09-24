@@ -1025,12 +1025,17 @@
     }
 
     function finishGame() {
-      isQuizActive = true;
+    isQuizActive = false; // ควรเป็น false เพื่อหยุดการเล่นเกมฉากหลัก
+    stopSound('start');
+    playSound('quiz');
 
-      stopSound('start');
-      playSound('quiz');
+    // สั่งแสดงหน้าต่าง Modal จัดอันดับ
+    document.getElementById('resultModal').style.display = 'flex'; 
 
-      document.getElementById('resultModal').style.display = 'flex';
+    // เรียกฟังก์ชันเพื่อเรนเดอร์ข้อมูลเปอร์เซ็นต์และอันดับขึ้นมา
+    showRankingPage();
+
+    // ... (โค้ดจับเวลาหรือส่วนอื่นๆ ที่เหลือต่อจากนี้)
 
       let timeLeft = 5;
       const timerEl = document.getElementById('timerText');
