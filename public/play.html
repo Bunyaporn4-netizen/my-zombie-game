@@ -1024,31 +1024,56 @@
       }
     }
 
-    function finishGame() {
-    isQuizActive = false; // ควรเป็น false เพื่อหยุดการเล่นเกมฉากหลัก
-    stopSound('start');
-    playSound('quiz');
+        // ฟังก์ชันเมื่อเกมจบลงและเตรียมส่งผลลัพธ์
+function showFinalResult() {
+  // 1. ซ่อนข้อความนับถอยหลัง
+  if (document.getElementById('timerText')) {
+    document.getElementById('timerText').style.display = 'none';
+  }
 
-    // สั่งแสดงหน้าต่าง Modal จัดอันดับ
-    document.getElementById('resultModal').style.display = 'flex'; 
+  // 2. คำนวณสรุปผลคะแนนสายเรียนที่ได้สูงสุด
+  const counts = {};
+  if (Array.isArray(selectedTypes)) {
+    selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+  }
 
-    // เรียกฟังก์ชันเพื่อเรนเดอร์ข้อมูลเปอร์เซ็นต์และอันดับขึ้นมา
-    showRankingPage();
-
-    // ... (โค้ดจับเวลาหรือส่วนอื่นๆ ที่เหลือต่อจากนี้)
-
-      let timeLeft = 5;
-      const timerEl = document.getElementById('timerText');
-
-      const countdown = setInterval(() => {
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          showFinalResult();
-        }
-      }, 1000);
+  let topType = "";
+  let maxCount = 0;
+  for (const type in counts) {
+    if (counts[type] > maxCount) {
+      maxCount = counts[type];
+      topType = type;
     }
+  }
+
+  // 3. รวมข้อมูลผู้เล่นส่งไปยัง Socket Server เพื่อลง Google Sheets
+  const playerData = {
+    playerName: typeof playerName !== 'undefined' ? playerName : "Guest",
+    score: typeof score !== 'undefined' ? score : 0,
+    resultType: topType || "สายวิทย์-คณิต"
+  };
+
+  if (typeof socket !== 'undefined') {
+    socket.emit('submitAnswer', playerData);
+  }
+
+  // 4. แสดง Modal ผลลัพธ์สถิติ
+  const resultModal = document.getElementById('resultModal');
+  if (resultModal) {
+    resultModal.style.display = 'flex';
+  }
+}
+let timeLeft = 5;
+const timerEl = document.getElementById('timerText');
+
+const countdown = setInterval(() => {
+  timeLeft--;
+  if (timerEl) timerEl.innerText = timeLeft;
+  if (timeLeft <= 0) {
+    clearInterval(countdown);
+    showFinalResult(); // สั่งรันฟังก์ชันจบเกมเมื่อครบเวลา
+  }
+}, 1000);
 
     function showFinalResult() {
       document.getElementById('timerText').style.display = 'none';
@@ -1148,35 +1173,30 @@
     resizeCanvas();
     initZombies();
     gameLoop();
-    socket.on('updatestats', function(stats) {
-    // เก็บสถิติไว้ใช้Global ถ้าต้องการ
-    window.currentStats = stats;
+    socket.on('updateStats', function(stats) {
+  if (!stats) return;
 
-    const total = (stats['วิทย์-คณิต'] || 0) + 
-                  (stats['สายอาชีพ'] || 0) + 
-                  (stats['สายศิลป์'] || 0) + 
-                  (stats['สายภาษา'] || 0);
+  window.currentStats = stats;
 
-    const mathPercent = total > 0 ? Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100) : 0;
-    const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
-    const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
-    const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
+  const total = (stats['สายวิทย์-คณิต'] || 0) +
+                (stats['สายอาชีพ'] || 0) +
+                (stats['สายศิลป์'] || 0) +
+                (stats['สายภาษา'] || 0);
 
-    // อัปเดตตัวเลขเปอร์เซ็นต์ผ่าน ID โดยตรง
-    if(document.getElementById('วิทย์-คณิต-percent')) document.getElementById('วิทย์-คณิต-percent').innerText = mathPercent + '%';
-    if(document.getElementById('สายอาชีพ-percent')) document.getElementById('สายอาชีพ-percent').innerText = vocPercent + '%';
-    if(document.getElementById('สายศิลป์-percent')) document.getElementById('สายศิลป์-percent').innerText = artPercent + '%';
-    if(document.getElementById('สายภาษา-percent')) document.getElementById('สายภาษา-percent').innerText = langPercent + '%';
+  const mathPercent = total > 0 ? Math.round(((stats['สายวิทย์-คณิต'] || 0) / total) * 100) : 0;
+  const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
+  const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
+  const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
+
+  updateElementText('สายวิทย์-คณิต-percent', mathPercent + '%');
+  updateElementText('สายอาชีพ-percent', vocPercent + '%');
+  updateElementText('สายศิลป์-percent', artPercent + '%');
+  updateElementText('สายภาษา-percent', langPercent + '%');
 });
-  function updateStatText(label, percent) {
-    const elements = document.querySelectorAll('div, p, span');
-    elements.forEach(el => {
-        if (el.children.length === 0 && el.innerText.includes(label)) {
-            // แทนที่เฉพาะข้อความที่เป็นตัวเลขเปอร์เซ็นต์เก่า (เช่น 0%, 33% ฯลฯ) ให้เป็นเปอร์เซ็นต์ใหม่
-            // หรือถ้าโครงสร้างข้อความรวมกัน ให้ดึงชื่อสาย + เปอร์เซ็นต์ใหม่เข้าไปตรงๆ โดยเคลียร์ค่าเก่าทิ้ง
-            el.innerText = `${label} ${percent}%`;
-        }
-    });
+
+function updateElementText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = text;
 }
   </script>
 </body>
