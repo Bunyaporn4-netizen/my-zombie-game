@@ -4,7 +4,7 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const fetch = require('node-fetch');
 
-const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzaPdbfHU3X1DFGod7AUFZKcDjTo-psL4qMZ8vf2TOP2X_1LhLepHv2oa9kLMsCZUYVGg/exec'; // URL ของคุณ
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzbUhFNflOPF1uLsozS8ejoUq9I7rdvM-2lT41Gbh18jqPNTV2w2cNYqPB7x2TCHw4jQw/exec'; // URL ของคุณ
 
 app.use(express.static('public'));
 
