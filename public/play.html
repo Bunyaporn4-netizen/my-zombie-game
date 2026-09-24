@@ -1050,10 +1050,17 @@ const countdown = setInterval(() => {
     // ฟังก์ชันจบเกมและสรุปอันดับแนวโน้ม
 function showFinalResult() {
   // 1. ซ่อนหน้า Modal กำลังประมวลผล (แก้ปัญหาหน้าค้าง)
-  const loadingModal = document.getElementById('loadingModal') || document.querySelector('.loading-modal');
-  if (loadingModal) {
-    loadingModal.style.display = 'none';
-  }
+  // สั่งปิดหน้าต่างโหลดประมวลผลทุกตัวที่มีโอกาสเป็นไปได้
+const modalIdsToHide = ['loadingModal', 'startCountdownModal', 'countdownModal', 'processingModal'];
+modalIdsToHide.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+});
+
+// สั่งปิดด้วย class เพิ่มเติมเพื่อความชัวร์ 100%
+document.querySelectorAll('.loading-modal, .modal-loading, .countdown-modal').forEach(el => {
+  el.style.display = 'none';
+});
 
   // 2. กำหนดสายเรียน
   const categories = [
