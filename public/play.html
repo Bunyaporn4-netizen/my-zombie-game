@@ -1166,12 +1166,14 @@
   function updateStatText(label, percent) {
     const elements = document.querySelectorAll('div, p, span');
     elements.forEach(el => {
-      if (el.children.length === 0 && el.innerText.includes(label)) {
-        let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
-        el.innerText = `${cleanLabel} ${percent}%`;
-      }
+        if (el.children.length === 0 && el.innerText.includes(label)) {
+            // ตัดตัวเลข, เปอร์เซ็นต์ หรือเครื่องหมาย % ที่ติดมาให้ออกให้หมด เพื่อเอาเฉพาะชื่อสายเรียน
+            let cleanLabel = el.innerText.replace(/[\d%]/g, '').trim();
+            // ป้องกันกรณีชื่อซ้ำซ้อน ให้ใช้ label หลักแทนถ้าต้องการความชัวร์
+            el.innerText = `${label} ${percent}%`;
+        }
     });
-  }
+}
   </script>
 </body>
 </html>
