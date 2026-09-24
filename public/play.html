@@ -1145,6 +1145,40 @@
     resizeCanvas();
     initZombies();
     gameLoop();
+    socket.on('updateStats', function(stats) {
+    if (!stats) return;
+
+    // คำนวณจำนวนคนรวมทั้งหมด
+    let total = (stats["สายวิทย์-คณิต"] || 0) + 
+                (stats["สายอาชีพ"] || 0) + 
+                (stats["สายศิลป์"] || 0) + 
+                (stats["สายภาษา"] || 0);
+
+    if (total > 0) {
+      // คำนวณเปอร์เซ็นต์
+      let mathPercent = Math.round(((stats["สายวิทย์-คณิต"] || 0) / total) * 100);
+      let vocPercent  = Math.round(((stats["สายอาชีพ"] || 0) / total) * 100);
+      let artPercent  = Math.round(((stats["สายศิลป์"] || 0) / total) * 100);
+      let langPercent = Math.round(((stats["สายภาษา"] || 0) / total) * 100);
+
+      // อัปเดตข้อความเปอร์เซ็นต์บนหน้าจอทันที
+      // (ระบบจะค้นหาองค์ประกอบที่มีคำว่า 'สายวิทย์-คณิต' แล้วเปลี่ยนตัวเลข)
+      updateStatText("สายวิทย์-คณิต", mathPercent);
+      updateStatText("สายอาชีพ", vocPercent);
+      updateStatText("สายศิลป์", artPercent);
+      updateStatText("สายภาษา", langPercent);
+    }
+  });
+
+  // ฟังก์ชันช่วยอัปเดตข้อความใน UI
+  function updateStatText(label, percent) {
+    const elements = document.querySelectorAll('div, p, span');
+    elements.forEach(el => {
+      if (el.children.length === 0 && el.innerText.includes(label)) {
+        el.innerText = `${label} ${percent}%`;
+      }
+    });
+  }
   </script>
 </body>
 </html>
