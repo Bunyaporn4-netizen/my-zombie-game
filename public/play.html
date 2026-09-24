@@ -1146,27 +1146,32 @@
     initZombies();
     gameLoop();
     socket.on('updateStats', function(stats) {
-    const total = stats.total || 1;
-    const mathPercent = Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100);
-    const vocPercent = Math.round(((stats['สายอาชีพ'] || 0) / total) * 100);
-    const artPercent = Math.round(((stats['สายศิลป์'] || 0) / total) * 100);
-    const langPercent = Math.round(((stats['สายภาษา'] || 0) / total) * 100);
+  if (!stats) return;
 
-    updateStatText("สายวิทย์-คณิต", mathPercent);
-    updateStatText("สายอาชีพ", vocPercent);
-    updateStatText("สายศิลป์", artPercent);
-    updateStatText("สายภาษา", langPercent);
-  });
+  // 1. คำนวณเปอร์เซ็นต์
+  const total = (stats['สายวิทย์-คณิต'] || 0) + 
+                (stats['สายอาชีพ'] || 0) + 
+                (stats['สายศิลป์'] || 0) + 
+                (stats['สายภาษา'] || 0);
 
-  function updateStatText(label, percent) {
-    const elements = document.querySelectorAll('div, p, span');
-    elements.forEach(el => {
-      if (el.children.length === 0 && el.innerText.includes(label)) {
-        let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
-        el.innerText = `${cleanLabel} ${percent}%`;
-      }
-    });
+  const mathPercent = total > 0 ? Math.round(((stats['สายวิทย์-คณิต'] || 0) / total) * 100) : 0;
+  const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
+  const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
+  const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
+
+  // 2. อัปเดตแบบเขียนทับชื่อสาย + เปอร์เซ็นต์ เพื่อลบ 0% เก่าออกให้หมด
+  setStatText('สายวิทย์-คณิต-percent', `🔬 สายวิทย์-คณิต ${mathPercent}%`);
+  setStatText('สายอาชีพ-percent', `🔧 สายอาชีพ ${vocPercent}%`);
+  setStatText('สายศิลป์-percent', `🎨 สายศิลป์ ${artPercent}%`);
+  setStatText('สายภาษา-percent', `🗣️ สายภาษา ${langPercent}%`);
+});
+
+function setStatText(id, fullText) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.innerText = fullText; // เขียนทับข้อความทั้งหมด ป้องกัน 0% โผล่ซ้ำ
   }
+}
   </script>
 </body>
 </html>
