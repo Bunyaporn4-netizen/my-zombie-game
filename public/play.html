@@ -1174,19 +1174,17 @@
   // ฟังก์ชันช่วยอัปเดตข้อความใน UI แบบไม่ให้ตัวเลขซ้อนกัน
   // ฟังก์ชันช่วยอัปเดตเปอร์เซ็นต์อย่างถูกต้อง ไม่ลบข้อความโครงสร้างเดิม
   function updateStatText(label, percent) {
-    const elements = document.querySelectorAll('div, p, span');
-    elements.forEach(el => {
-      // เช็คข้อความโดยหาว่ามีชื่อสายเรียนอยู่ไหม
-      if (el.children.length === 0 && el.innerText.includes(label)) {
-        // ใช้ Regex ช่วยเปลี่ยนเฉพาะตัวเลขเปอร์เซ็นต์ท้ายสุด หรือใส่เปอร์เซ็นต์ต่อท้าย
-        if (/\d+%/.test(el.innerText)) {
-          el.innerText = el.innerText.replace(/\d+%/, `${percent}%`);
-        } else {
-          el.innerText = `${label} ${percent}%`;
-        }
+  const elements = document.querySelectorAll('div, p, span');
+  elements.forEach(el => {
+    if (el.children.length === 0 && el.innerText.includes(label)) {
+      if (/\d+%/.test(el.innerText)) {
+        el.innerText = el.innerText.replace(/\d+%/, `${percent}%`);
+      } else {
+        el.innerText = `${label} ${percent}%`;
       }
-    });
-  }
+    }
+  });
+}
   </script>
 </body>
 </html>
