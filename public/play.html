@@ -1032,92 +1032,72 @@
 
       document.getElementById('resultModal').style.display = 'flex';
 
-     let timeLeft = 5;
-const timerEl = document.getElementById('timerText');
-}
-const countdown = setInterval(() => {
-  timeLeft--;
-  if (timerEl) {
-    timerEl.innerText = timeLeft;
-  }
+      let timeLeft = 5;
+      const timerEl = document.getElementById('timerText');
 
-  if (timeLeft <= 0) {
-    clearInterval(countdown); // หยุดนับถอยหลัง
-    showFinalResult();       // รันฟังก์ชันแสดงผลลัพธ์
-  }
-}, 1000);
-
-    // ฟังก์ชันจบเกมและสรุปอันดับแนวโน้ม
-function showFinalResult() {
-  // 1. ซ่อนหน้า Modal กำลังประมวลผล (แก้ปัญหาหน้าค้าง)
-  // สั่งปิดหน้าต่างโหลดประมวลผลทุกตัวที่มีโอกาสเป็นไปได้
-const modalIdsToHide = ['loadingModal', 'startCountdownModal', 'countdownModal', 'processingModal'];
-modalIdsToHide.forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
-});
-
-// สั่งปิดด้วย class เพิ่มเติมเพื่อความชัวร์ 100%
-document.querySelectorAll('.loading-modal, .modal-loading, .countdown-modal').forEach(el => {
-  el.style.display = 'none';
-});
-
-  // 2. กำหนดสายเรียน
-  const categories = [
-    { name: "สายวิทย์-คณิต", icon: "🔬" },
-    { name: "สายอาชีพ",      icon: "🔧" },
-    { name: "สายศิลป์",      icon: "🎨" },
-    { name: "สายภาษา",      icon: "🗣️" }
-  ];
-
-  // 3. คำนวณคำตอบที่ผู้เล่นเลือกจริง
-  const counts = { "สายวิทย์-คณิต": 0, "สายอาชีพ": 0, "สายศิลป์": 0, "สายภาษา": 0 };
-  
-  if (typeof selectedTypes !== 'undefined' && Array.isArray(selectedTypes)) {
-    selectedTypes.forEach(type => {
-      if (type.includes("วิทย์")) counts["สายวิทย์-คณิต"]++;
-      else if (type.includes("อาชีพ")) counts["สายอาชีพ"]++;
-      else if (type.includes("ศิลป์")) counts["สายศิลป์"]++;
-      else if (type.includes("ภาษา")) counts["สายภาษา"]++;
-    });
-  }
-
-  // 4. จัดอันดับจากมากไปหาน้อย
-  const sortedCategories = categories.map(cat => ({
-    ...cat,
-    score: counts[cat.name] || 0
-  })).sort((a, b) => b.score - a.score);
-
-  // 5. แสดงผลอันดับ 1 - 4 บนหน้าจอ
-  const rankingIds = [
-    'สายวิทย์-คณิต-percent',
-    'สายอาชีพ-percent',
-    'สายศิลป์-percent',
-    'สายภาษา-percent'
-  ];
-
-  sortedCategories.forEach((item, index) => {
-    const targetEl = document.getElementById(rankingIds[index]);
-    if (targetEl) {
-      targetEl.innerText = `อันดับ ${index + 1}: ${item.icon} ${item.name} (${item.score} ข้อ)`;
+      const countdown = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          showFinalResult();
+        }
+      }, 1000);
     }
-  });
 
-  // 6. แสดง Modal ผลลัพธ์อันดับ
-  const resultModal = document.getElementById('resultModal');
-  if (resultModal) {
-    resultModal.style.display = 'flex';
-  }
+    function showFinalResult() {
+      document.getElementById('timerText').style.display = 'none';
 
-  // 7. ส่งข้อมูลสายอันดับ 1 เข้า Google Sheets
-  if (typeof socket !== 'undefined') {
-    socket.emit('submitAnswer', {
-      playerName: typeof playerName !== 'undefined' ? playerName : "Guest",
-      score: typeof score !== 'undefined' ? score : 0,
-      resultType: sortedCategories[0].name
-    });
-  }
-}
+      const counts = {};
+      selectedTypes.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+
+      let topType = "";
+      let maxCount = 0;
+      for (let t in counts) {
+        if (counts[t] > maxCount) {
+          maxCount = counts[t];
+          topType = t;
+        }
+      }
+
+      const resultBox = document.getElementById('result-box');
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <h3 style="margin-top:0; color:#03dac6; font-size:1.1rem;">💡 สายการเรียนที่เหมาะสมกับคุณคือ: ${topType}</h3>
+        <p style="margin-bottom:5px; font-size:0.95rem;">👤 <strong>ผู้เล่น:</strong> ${playerName}</p>
+        <p style="margin-bottom:5px; font-size:0.95rem;">⭐ <strong>คะแนนยิงปืนรวม:</strong> ${score} คะแนน</p>
+        <p style="margin-bottom:0; font-size:0.85rem; color:#aaa;">คุณได้ตอบคำถามครบทั้ง 20 ข้อเรียบร้อยแล้ว!</p>
+
+        <!-- ปุ่ม NEXT -->
+        <div style="text-align: center;">
+          <button class="btn-next" onclick="showRankingPage()">NEXT ➔</button>
+        </div>
+      `;
+
+      if (socket) {
+        socket.emit('submitAnswer', { 
+          playerName: playerName,
+          score: score,
+          optionText: topType 
+        });
+      }
+    }
+
+    // ฟังก์ชันสำหรับเปิดหน้าจัดอันดับสถิติสายเรียน (แสดงเฉพาะ %)
+    // ดักรับสถิติจริงที่ส่งมาจาก Server
+      let currentStats = {
+        "สายวิทย์-คณิต": 0,
+        "สายอาชีพ": 0,
+        "สายศิลป์": 0,
+        "สายภาษา": 0
+      };
+
+      if (typeof socket !== 'undefined') {
+        socket.on('updateStats', (stats) => {
+          currentStats = stats;
+        });
+      }
+
       function showRankingPage() {
         document.getElementById('resultModal').style.display = 'none';
 
@@ -1166,32 +1146,27 @@ document.querySelectorAll('.loading-modal, .modal-loading, .countdown-modal').fo
     initZombies();
     gameLoop();
     socket.on('updateStats', function(stats) {
-  if (!stats) return;
+    const total = stats.total || 1;
+    const mathPercent = Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100);
+    const vocPercent = Math.round(((stats['สายอาชีพ'] || 0) / total) * 100);
+    const artPercent = Math.round(((stats['สายศิลป์'] || 0) / total) * 100);
+    const langPercent = Math.round(((stats['สายภาษา'] || 0) / total) * 100);
 
-  // 1. คำนวณเปอร์เซ็นต์
-  const total = (stats['สายวิทย์-คณิต'] || 0) + 
-                (stats['สายอาชีพ'] || 0) + 
-                (stats['สายศิลป์'] || 0) + 
-                (stats['สายภาษา'] || 0);
+    updateStatText("สายวิทย์-คณิต", mathPercent);
+    updateStatText("สายอาชีพ", vocPercent);
+    updateStatText("สายศิลป์", artPercent);
+    updateStatText("สายภาษา", langPercent);
+  });
 
-  const mathPercent = total > 0 ? Math.round(((stats['สายวิทย์-คณิต'] || 0) / total) * 100) : 0;
-  const vocPercent  = total > 0 ? Math.round(((stats['สายอาชีพ'] || 0) / total) * 100) : 0;
-  const artPercent  = total > 0 ? Math.round(((stats['สายศิลป์'] || 0) / total) * 100) : 0;
-  const langPercent = total > 0 ? Math.round(((stats['สายภาษา'] || 0) / total) * 100) : 0;
-
-  // 2. อัปเดตแบบเขียนทับชื่อสาย + เปอร์เซ็นต์ เพื่อลบ 0% เก่าออกให้หมด
-  setStatText('สายวิทย์-คณิต-percent', `🔬 สายวิทย์-คณิต ${mathPercent}%`);
-  setStatText('สายอาชีพ-percent', `🔧 สายอาชีพ ${vocPercent}%`);
-  setStatText('สายศิลป์-percent', `🎨 สายศิลป์ ${artPercent}%`);
-  setStatText('สายภาษา-percent', `🗣️ สายภาษา ${langPercent}%`);
-});
-
-function setStatText(id, fullText) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.innerText = fullText; // เขียนทับข้อความทั้งหมด ป้องกัน 0% โผล่ซ้ำ
+  function updateStatText(label, percent) {
+    const elements = document.querySelectorAll('div, p, span');
+    elements.forEach(el => {
+      if (el.children.length === 0 && el.innerText.includes(label)) {
+        let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
+        el.innerText = `${cleanLabel} ${percent}%`;
+      }
+    });
   }
-}
   </script>
 </body>
 </html>
