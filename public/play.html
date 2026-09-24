@@ -1171,10 +1171,13 @@
   });
 
   // ฟังก์ชันช่วยอัปเดตข้อความใน UI
+  // ฟังก์ชันช่วยอัปเดตข้อความใน UI แบบไม่ให้ตัวเลขซ้อนกัน
   function updateStatText(label, percent) {
     const elements = document.querySelectorAll('div, p, span');
     elements.forEach(el => {
+      // ตรวจสอบเฉพาะก้อนข้อความที่มีชื่อสาย
       if (el.children.length === 0 && el.innerText.includes(label)) {
+        // แทนที่ด้วย ชื่อสาย + เปอร์เซ็นต์ใหม่แบบคลีนๆ
         el.innerText = `${label} ${percent}%`;
       }
     });
