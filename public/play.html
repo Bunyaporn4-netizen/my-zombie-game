@@ -1146,41 +1146,27 @@
     initZombies();
     gameLoop();
     socket.on('updateStats', function(stats) {
-    if (!stats) return;
+    const total = stats.total || 1;
+    const mathPercent = Math.round(((stats['วิทย์-คณิต'] || 0) / total) * 100);
+    const vocPercent = Math.round(((stats['สายอาชีพ'] || 0) / total) * 100);
+    const artPercent = Math.round(((stats['สายศิลป์'] || 0) / total) * 100);
+    const langPercent = Math.round(((stats['สายภาษา'] || 0) / total) * 100);
 
-    // คำนวณจำนวนคนรวมทั้งหมด
-    let total = (stats["สายวิทย์-คณิต"] || 0) + 
-                (stats["สายอาชีพ"] || 0) + 
-                (stats["สายศิลป์"] || 0) + 
-                (stats["สายภาษา"] || 0);
-
-    if (total > 0) {
-      // คำนวณเปอร์เซ็นต์
-      let mathPercent = Math.round(((stats["สายวิทย์-คณิต"] || 0) / total) * 100);
-      let vocPercent  = Math.round(((stats["สายอาชีพ"] || 0) / total) * 100);
-      let artPercent  = Math.round(((stats["สายศิลป์"] || 0) / total) * 100);
-      let langPercent = Math.round(((stats["สายภาษา"] || 0) / total) * 100);
-
-      // อัปเดตข้อความเปอร์เซ็นต์บนหน้าจอทันที
-      // (ระบบจะค้นหาองค์ประกอบที่มีคำว่า 'สายวิทย์-คณิต' แล้วเปลี่ยนตัวเลข)
-      updateStatText("สายวิทย์-คณิต", mathPercent);
-      updateStatText("สายอาชีพ", vocPercent);
-      updateStatText("สายศิลป์", artPercent);
-      updateStatText("สายภาษา", langPercent);
-    }
+    updateStatText("สายวิทย์-คณิต", mathPercent);
+    updateStatText("สายอาชีพ", vocPercent);
+    updateStatText("สายศิลป์", artPercent);
+    updateStatText("สายภาษา", langPercent);
   });
 
   function updateStatText(label, percent) {
-  const elements = document.querySelectorAll('div, p, span');
-  elements.forEach(el => {
-    if (el.children.length === 0 && el.innerText.includes(label)) {
-      // ดึงเฉพาะไอคอนและข้อความชื่อสาย (ลบตัวเลขและ % ทิ้งทั้งหมด)
-      let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
-      // ใส่เปอร์เซ็นต์ใหม่แบบคลีนๆ
-      el.innerText = `${cleanLabel} ${percent}%`;
-    }
-  });
-}
+    const elements = document.querySelectorAll('div, p, span');
+    elements.forEach(el => {
+      if (el.children.length === 0 && el.innerText.includes(label)) {
+        let cleanLabel = el.innerText.replace(/[\d%]+/g, '').trim();
+        el.innerText = `${cleanLabel} ${percent}%`;
+      }
+    });
+  }
   </script>
 </body>
 </html>
